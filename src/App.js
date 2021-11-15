@@ -89,6 +89,7 @@ export default class App extends React.Component {
           winHeight: 60,
           x: 300,
           y: 300,
+          autoPage: 0,
           prev: window.platform.isMacOs ? 'Command+ArrowLeft' : 'Control+[',
           next: window.platform.isMacOs ? 'Command+ArrowRight' : 'Control+]'
         },
@@ -562,38 +563,26 @@ export default class App extends React.Component {
   }
   /****   取色  ****/
   pickColor = (e) => {
+    let self = this;
     window.utools.screenColorPick(({hex, rgb})=>{
-      if(e.target.getAttribute('id') === 'bgColor'){
+      if(e.target.getAttribute('colorType') === 'bgColor'){
         let arr = rgb.split(',');
         if(arr.length === 3){
-          arr[2] = arr[2].replace(')',','+ this.state.user.opacity +')');
+          arr[2] = arr[2].replace(')',', '+ this.state.user.data.opacity +')');
           rgb = arr.join(",");
         } else if(arr.length === 4){
-          arr[3] = this.state.user.opacity + ')';
+          arr[3] = this.state.user.data.opacity + ')';
           rgb = arr.join(",");
         }
       }
-      e.target.setAttribute('lxValue',rgb);
+      self.state.user.data[e.target.getAttribute('colorType')] = rgb;
+      self.setState({user : JSON.parse(JSON.stringify(self.state.user))});
       e.target.style.background = rgb;
     })
   }
   /****   打开设置  ****/
   openSetting = (e) => {
-    let self = this;
-    this.setState({showSetting : true},()=>{
-      let index = 0;
-      let timer1 = setInterval(function (){
-        index ++;
-        if(document.getElementById('bgColor')){
-          document.getElementById('bgColor').style.background = self.state.user.data.bgColor;
-          document.getElementById('fontColor').style.background = self.state.user.data.fontColor;
-          clearInterval(timer1);
-        }
-        if(index > 15){
-          clearInterval(timer1);
-        }
-      },30);
-    });
+    this.setState({showSetting : true});
   }
   /****  获取各系统按键的表现形式  ****/
   getCommandStr = () => {
@@ -619,27 +608,34 @@ export default class App extends React.Component {
   /****   修改设置  ****/
   saveConfig = (e) => {
     let config = this.state.user;
+    if(!/^[rR][gG][Bb][Aa]?[\(]([\s]*(2[0-4][0-9]|25[0-5]|[01]?[0-9][0-9]?),){2}[\s]*(2[0-4][0-9]|25[0-5]|[01]?[0-9][0-9]?),?[\s]*(0\.\d{1,2}|1|0)?[\)]{1}$/g.test(config.data.bgColor)
+      || !/^[rR][gG][Bb][Aa]?[\(]([\s]*(2[0-4][0-9]|25[0-5]|[01]?[0-9][0-9]?),){2}[\s]*(2[0-4][0-9]|25[0-5]|[01]?[0-9][0-9]?),?[\s]*(0\.\d{1,2}|1|0)?[\)]{1}$/g.test(config.data.fontColor)){
+      this.showTip('只支持rgb颜色值，请修改')
+      return;
+    }
+    if(!config.data.numOfPage || !config.data.fontSize || !config.data.prev || !config.data.next){
+      this.showTip('设置内容请不要留空')
+      return;
+    }
     if(config._rev){
       config._rev = window.utools.db.get("config")._rev;
     }
-    let arr = document.getElementById('bgColor').getAttribute('lxValue').split(',');
-    let rgbBg = document.getElementById('bgColor').getAttribute('lxValue');
-    if(arr.length === 3){
-      arr[2] = arr[2].replace(')',','+config.data.opacity+')');
-      rgbBg = arr.join(",");
-    } else if(arr.length === 4){
-      arr[3] = config.data.opacity+')';
-      rgbBg = arr.join(",");
+    config.data.numOfPage = Number(config.data.numOfPage);
+    config.data.autoPage = Number(config.data.autoPage) || 0;
+    if(config.data.fontSize < 5 || config.data.fontSize > 22){
+      this.showTip('字体大小范围为5-22');
+      return;
     }
-    config.data.bgColor = rgbBg;
-    config.data.fontColor = document.getElementById('fontColor').getAttribute('lxValue');
-    config.numOfPage = Number(config.numOfPage);
     if(config.data.prev.endsWith('+') || config.data.next.endsWith('+')){
       this.showTip('不能使用纯功能键作为快捷键！');
       return;
     }
     if(config.data.prev === config.data.next){
       this.showTip('上一页与下一页不能使用相同的快捷键！');
+      return;
+    }
+    if(config.autoPage < 0 || config.autoPage > 100){
+      this.showTip('自动翻页时间范围为0秒-100秒');
       return;
     }
     if(!config._rev){
@@ -662,7 +658,8 @@ export default class App extends React.Component {
   /****  输入框修改  ****/
   inputChange = (e) => {
     let config = this.state.user;
-    config.data[e.target.getAttribute('id')] = e.target.value;
+    let val = e.target.value.toString().replace('-','').replace('+','').replace('e','')
+    config.data[e.target.getAttribute('id')] = Number(val);
     this.setState({user : JSON.parse(JSON.stringify(config))});
   }
   inputChange2 = (e) => {
@@ -680,6 +677,11 @@ export default class App extends React.Component {
       this.searchContent(false);
     }
   }
+  inputChange5 = (e) => {
+    let config = this.state.user;
+    config.data[e.target.getAttribute('id')] = e.target.value;
+    this.setState({user : JSON.parse(JSON.stringify(config))});
+  }
   inputBlur = (e) => {
     document.removeEventListener('keydown', this.keyFunc);
   }
@@ -696,20 +698,21 @@ export default class App extends React.Component {
   /****  slide修改  ****/
   slideChange = (e,value) => {
     //自动调节背景颜色
-    let rgbBg = document.getElementById('bgColor').getAttribute('lxValue');
-    let arr = rgbBg.split(',');
-    if(arr.length === 3){
-      arr[2] = arr[2].replace(')',','+ value +')');
-      rgbBg = arr.join(",");
-    } else if(arr.length === 4){
-      arr[3] = value + ')';
-      rgbBg = arr.join(",");
+    let rgbBg = this.state.user.data.bgColor;
+    if(/^[rR][gG][Bb][Aa]?[\(]([\s]*(2[0-4][0-9]|25[0-5]|[01]?[0-9][0-9]?),){2}[\s]*(2[0-4][0-9]|25[0-5]|[01]?[0-9][0-9]?),?[\s]*(0\.\d{1,2}|1|0)?[\)]{1}$/g.test(rgbBg)){
+      let arr = rgbBg.split(',');
+      if(arr.length === 3){
+        arr[2] = arr[2].replace(')',','+ value +')');
+        rgbBg = arr.join(",");
+      } else if(arr.length === 4){
+        arr[3] = value + ')';
+        rgbBg = arr.join(",");
+      }
     }
-    document.getElementById('bgColor').style.background = rgbBg;
-    document.getElementById('bgColor').setAttribute('lxValue', rgbBg);
     //设置透明度value
     let config = this.state.user;
     config.data.opacity = value;
+    config.data.bgColor = rgbBg;
     this.setState({user : JSON.parse(JSON.stringify(config))});
   }
 
@@ -874,13 +877,17 @@ export default class App extends React.Component {
                   <Grid item xs={12} sm={6}>
                     <Typography variant="overline" display="block" >
                       <span className='setting-label'>字体颜色</span>
-                      <span className='setting-color' id='fontColor' lxValue={this.state.user.data.fontColor} style={{ background: this.state.user.data.fontColor }} onClick={this.pickColor} />
+                      <span className='setting-color' colorType='fontColor' style={{ background: this.state.user.data.fontColor }} onClick={this.pickColor} />
+                      <Input value={this.state.user.data.fontColor} className='color-input'  size="small" id='fontColor' inputProps={{ 'aria-label': 'description' }}
+                             placeholder='只支持rgb颜色值' onChange={(e) => this.inputChange5(e)}/>
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="overline" display="block" >
                       <span className='setting-label'>背景颜色</span>
-                      <span className='setting-color' id='bgColor' lxValue={this.state.user.data.bgColor} style={{ background: this.state.user.data.bgColor }} onClick={this.pickColor} />
+                      <span className='setting-color' colorType='bgColor' style={{ background: this.state.user.data.bgColor }} onClick={this.pickColor} />
+                      <Input value={this.state.user.data.bgColor} className='color-input' size="small" id='bgColor' inputProps={{ 'aria-label': 'description' }}
+                             placeholder='只支持rgb颜色值' onChange={(e) => this.inputChange5(e)}/>
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={12}>
@@ -893,14 +900,14 @@ export default class App extends React.Component {
                     <Typography variant="overline" display="block" >
                       <span className='setting-label'>字体大小</span>
                       <Input value={this.state.user.data.fontSize} size="small" id='fontSize' inputProps={{ 'aria-label': 'description' }}
-                             onChange={(e) => this.inputChange(e)}/>
+                             type='number' onChange={(e) => this.inputChange(e)}/>
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="overline" display="block" >
                       <span className='setting-label'>每页字数</span>
                       <Input value={this.state.user.data.numOfPage} size="small" id='numOfPage' inputProps={{ 'aria-label': 'description' }}
-                             onChange={(e) => this.inputChange(e)}/>
+                             type='number' onChange={(e) => this.inputChange(e)}/>
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -916,6 +923,14 @@ export default class App extends React.Component {
                       <Input value={this.state.user.data.next} readOnly size="small" id='next' inputProps={{ 'aria-label': 'description' }}
                              onFocus={(e) => this.inputChange3(e)}
                              onBlur={(e) => this.inputBlur(e)} />
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="overline" display="block" >
+                      <span className='setting-label'>自动翻页</span>
+                      <Input value={this.state.user.data.autoPage} size="small" id='autoPage' inputProps={{ 'aria-label': 'description' }}
+                             placeholder='单位:秒,0为不自动翻页' type='number'
+                             onChange={(e) => this.inputChange(e)}/>
                     </Typography>
                   </Grid>
                 </Grid>

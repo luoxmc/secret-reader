@@ -46,6 +46,7 @@
         let windowTop = window.screenTop;
         let config = null;
         let tmpProgress = null;
+        let autoPageTimer = null;
 
         window.bookServices.receiveMsg(function (res){
             if(res.type === 1 && res.data){
@@ -55,6 +56,11 @@
                 $("#percent input").css("color",config.fontColor)
                 document.removeEventListener('keydown',keyListen);
                 document.addEventListener('keydown', keyListen);
+                if(config && config.autoPage && config.autoPage !== 0){
+                    setPageInterval();
+                } else {
+                    clearInterval(autoPageTimer);
+                }
             } else if(res.type === 2 && res.data){
                 $("#bookContent").html(res.data);
                 $("#percent input").val(res.progress);
@@ -151,6 +157,9 @@
                             data: 'prev'
                         }
                         window.bookServices.sendMsg(msg);
+                        if(config && config.autoPage && config.autoPage !== 0){
+                            setPageInterval();
+                        }
                     }
                 }
                 if (nextList && nextList.length > 0) {
@@ -166,9 +175,23 @@
                             data: 'next'
                         }
                         window.bookServices.sendMsg(msg);
+                        if(config && config.autoPage && config.autoPage !== 0){
+                            setPageInterval();
+                        }
                     }
                 }
             }
+        }
+
+        function setPageInterval(){
+            clearInterval(autoPageTimer);
+            autoPageTimer = setInterval(function (){
+                let msg = {
+                    type: 4,
+                    data: 'next'
+                }
+                window.bookServices.sendMsg(msg);
+            }, config.autoPage * 1000 );
         }
 
         function sendWindowData(){
