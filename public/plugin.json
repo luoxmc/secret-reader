@@ -1,0 +1,25 @@
+{
+  "main": "index.html",
+  "preload": "preload.js",
+  "logo": "logo.png",
+  "pluginSetting": {
+    "single": false
+  },
+  "features": [
+      {
+        "code": "secret-reader",
+        "explain": "摸鱼阅读神器",
+        "cmds": [
+          "read",
+          "摸鱼阅读"
+        ]
+      },
+      {
+        "code": "close-reader",
+        "explain": "关闭摸鱼阅读器",
+        "cmds": [
+          "close-fish-book"
+        ]
+      }
+  ]
+}
