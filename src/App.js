@@ -289,7 +289,7 @@ export default class App extends React.Component {
                 keywords = keywords.replace(/\n/g , '');
                 let x = self.findStr(str,keywords,count);
                 if(x && x > 0){
-                    dt.progress = Number(x) - Number(self.state.user.data.numOfPage);
+                    dt.progress = Number(x);
                     let res = window.utools.db.put(self.state.list);
                     if(res && res.ok) {
                       const book_id = self.state.chapter.bookId;
@@ -361,7 +361,7 @@ export default class App extends React.Component {
     let self = this;
     this.state.list.data.forEach(function(dt) {
       if (dt && dt.id === self.state.search.bookId) {
-        dt.progress = Number(index) - Number(self.state.user.data.numOfPage);
+        dt.progress = Number(index);
         let res = window.utools.db.put(self.state.list);
         if(res && res.ok) {
           const book_id = self.state.search.bookId;
