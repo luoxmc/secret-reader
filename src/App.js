@@ -100,8 +100,6 @@ export default class App extends React.Component {
   }
 
 
-
-
   /****  选择文件  ****/
   checkFile = () => {
     let file = window.utools.showOpenDialog({
@@ -128,6 +126,9 @@ export default class App extends React.Component {
       name = path.replace('.txt','').substring(path.lastIndexOf("\u005C") + 1);
     } else {
       name = path.replace('.txt','').substring(path.lastIndexOf("/") + 1);
+    }
+    if(name.length > 18){
+      name = name.substring(0,18) + "...";
     }
     tmpList.data.push({
       id : bookId,
