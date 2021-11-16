@@ -127,8 +127,8 @@ export default class App extends React.Component {
     } else {
       name = path.replace('.txt','').substring(path.lastIndexOf("/") + 1);
     }
-    if(name.length > 18){
-      name = name.substring(0,18) + "...";
+    if(name.length > 20){
+      name = name.substring(0,20) + "...";
     }
     tmpList.data.push({
       id : bookId,
@@ -470,7 +470,7 @@ export default class App extends React.Component {
       }
       window.services.sendMsg(ubWindow.webContents.id, msg);
       self.nextPage(true);
-    },600)
+    },300)
   }
   /****  关闭阅读器  ****/
   closeBook = () => {
@@ -736,6 +736,9 @@ export default class App extends React.Component {
       if(!config){
         //暂无设置，使用默认配置并存库
         config = this.state.user;
+        config.data.x = window.screenLeft + 90;
+        config.data.y = window.screenTop + 180;
+        console.log(config)
         if(!config._rev){
           delete config._rev;
         }
