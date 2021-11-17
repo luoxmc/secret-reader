@@ -10,8 +10,14 @@ window.services = {
     if(!buffer || buffer.length <= 0){
       return str;
     }
-    let encodingCheck = jschardet.detect(buffer);
-    console.log(encodingCheck);
+    let encodingCheck = {};
+    if(buffer.byteLength > 2000){
+      let tmpBuffer = new Buffer(2000);
+      buffer.copy(tmpBuffer,0,0,2000);
+      encodingCheck = jschardet.detect(tmpBuffer);
+    } else {
+      encodingCheck = jschardet.detect(buffer);
+    }
     if(encodingCheck.confidence > 0.5){
       str = iconv.decode(buffer , encodingCheck.encoding);
     }

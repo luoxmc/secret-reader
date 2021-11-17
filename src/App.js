@@ -412,6 +412,9 @@ export default class App extends React.Component {
   /****  开始阅读  ****/
   readBook = (e,id) => {
     console.log('start read book')
+    if(id === curId && ubWindow) {
+      return;
+    }
     let self = this;
     this.showLoading('文件编码格式检查中，请稍后...',function () {
       let flag = true;
@@ -441,6 +444,7 @@ export default class App extends React.Component {
       }
       if(!ubWindow){
         ubWindow = window.utools.createBrowserWindow('book.html', {
+          useContentSize: true,
           width : self.state.user.data.winWidth ,
           height : self.state.user.data.winHeight,
           x: self.state.user.data.x,
@@ -454,19 +458,20 @@ export default class App extends React.Component {
             // devTools: true,
             preload: 'bookPreload.js'
           }
+        }, () => {
+          //初始化阅读器
+          // ubWindow.webContents.openDevTools();
+          const msg = {
+            type: 1,
+            data: self.state.user.data
+          }
+          window.services.sendMsg(ubWindow.webContents.id, msg);
+          self.nextPage(true);
         })
-      }
-      //初始化阅读器
-      // ubWindow.webContents.openDevTools();
-      self.closeLoading();
-      setTimeout(function () {
-        const msg = {
-          type: 1,
-          data: self.state.user.data
-        }
-        window.services.sendMsg(ubWindow.webContents.id, msg);
+      } else {
         self.nextPage(true);
-      },200)
+      }
+      self.closeLoading();
     });
   }
   /****  关闭阅读器  ****/
