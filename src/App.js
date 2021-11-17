@@ -1,8 +1,9 @@
 import React from 'react'
 import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles'
 import {
-  Grid, Paper, Icon, MenuList, MenuItem, List, ListItem, ListItemText, ClickAwayListener, Card, Input, Slider, Divider,
+  Grid, Paper, MenuList, MenuItem, List, ListItem, ListItemText, ClickAwayListener, Card, Input, Slider, Divider,
   Snackbar, AppBar, Toolbar, Typography, Dialog, DialogContent, DialogTitle, DialogActions, Button, CardContent,
+  Backdrop, CircularProgress
 } from '@material-ui/core';
 import {AddCircle, Search, Settings} from '@material-ui/icons';
 
@@ -49,56 +50,55 @@ let curId = null;
 
 let focusId = '';
 
-
 export default class App extends React.Component {
 
-  constructor (props) {
-    super(props)
-    this.state = {
-      theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
-      list: {
-        _id : 'list',
-        data : [],
-        _rev : ''
+  state = {
+    theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+    list: {
+      _id : 'list',
+      data : [],
+      _rev : ''
+    },
+    chapter: {
+      list: [],
+      bookId: null,
+      showChapterList : false
+    },
+    search: {
+      list: [],
+      bookId: null,
+      show: false,
+      keywords: '',
+      hasMore: false
+    },
+    msg: {
+      show: false,
+      text: ''
+    },
+    user: {
+      _id : 'config',
+      data : {
+        bgColor: 'rgb(59, 62, 64, 0.8)',
+        fontColor: 'rgb(187, 187, 187)',
+        opacity: 0.8,
+        fontSize: 15,
+        numOfPage: 88,
+        winWidth: 800,
+        winHeight: 60,
+        x: 300,
+        y: 300,
+        autoPage: 0,
+        prev: window.platform.isMacOs ? 'Command+ArrowLeft' : 'Control+[',
+        next: window.platform.isMacOs ? 'Command+ArrowRight' : 'Control+]'
       },
-      chapter: {
-        list: [],
-        bookId: null,
-        showChapterList : false
-      },
-      search: {
-        list: [],
-        bookId: null,
-        show: false,
-        keywords: '',
-        hasMore: false
-      },
-      msg: {
-        show: false,
-        text: ''
-      },
-      user: {
-        _id : 'config',
-        data : {
-          bgColor: 'rgb(59, 62, 64, 0.8)',
-          fontColor: 'rgb(187, 187, 187)',
-          opacity: 0.8,
-          fontSize: 15,
-          numOfPage: 88,
-          winWidth: 800,
-          winHeight: 60,
-          x: 300,
-          y: 300,
-          autoPage: 0,
-          prev: window.platform.isMacOs ? 'Command+ArrowLeft' : 'Control+[',
-          next: window.platform.isMacOs ? 'Command+ArrowRight' : 'Control+]'
-        },
-        _rev : ''
-      },
-      showSetting: false
+      _rev : ''
+    },
+    showSetting: false,
+    loading: {
+      show: false,
+      msg: ''
     }
   }
-
 
   /****  选择文件  ****/
   checkFile = () => {
@@ -413,64 +413,61 @@ export default class App extends React.Component {
   readBook = (e,id) => {
     console.log('start read book')
     let self = this;
-    let flag = true;
-    this.state.list.data.forEach(function(dt) {
-      if (dt && dt.id === id) {
-        if(!window.services.checkFile(dt.path)){
-          self.showTip("该路径下文件已不存在或不可读");
-          flag = false;
-        }
-      }
-    });
-    if(!flag){
-      return;
-    }
-    if(id !== curId){
-      curId = id;
-      let flag2 = true;
-      this.state.list.data.forEach(function(dt) {
+    this.showLoading('文件编码格式检查中，请稍后...',function () {
+      let flag = true;
+      self.state.list.data.forEach(function(dt) {
         if (dt && dt.id === id) {
-          let str = window.services.readBook(dt.path)
-          if (str) {
-            curContent = str;
-            str = null;
+          if(!window.services.checkFile(dt.path)){
+            self.showTip("该路径下文件已不存在或不可读");
+            flag = false;
           } else {
-            self.showTip("未找到txt文件或文件失效");
-            flag2 = false;
+            let str = window.services.readBook(dt.path)
+            if (str) {
+              curContent = str;
+              str = null;
+            } else {
+              self.showTip("解析文件失败，文件编码不支持");
+              flag = false;
+            }
           }
         }
       });
-      if(!flag2){
+      if(!flag){
+        self.closeLoading();
         return;
       }
-    }
-    if(!ubWindow){
-      ubWindow = window.utools.createBrowserWindow('book.html', {
-        width : this.state.user.data.winWidth ,
-        height : this.state.user.data.winHeight,
-        x: this.state.user.data.x,
-        y: this.state.user.data.y,
-        alwaysOnTop : true,
-        frame : false,
-        transparent: true,
-        backgroundColor: '#00000000',
-        hasShadow: false,
-        webPreferences: {
-          // devTools: true,
-          preload: 'bookPreload.js'
-        }
-      })
-    }
-    //初始化阅读器
-    // ubWindow.webContents.openDevTools();
-    setTimeout(function () {
-      const msg = {
-        type: 1,
-        data: self.state.user.data
+      if(id !== curId) {
+        curId = id;
       }
-      window.services.sendMsg(ubWindow.webContents.id, msg);
-      self.nextPage(true);
-    },300)
+      if(!ubWindow){
+        ubWindow = window.utools.createBrowserWindow('book.html', {
+          width : self.state.user.data.winWidth ,
+          height : self.state.user.data.winHeight,
+          x: self.state.user.data.x,
+          y: self.state.user.data.y,
+          alwaysOnTop : true,
+          frame : false,
+          transparent: true,
+          backgroundColor: '#00000000',
+          hasShadow: false,
+          webPreferences: {
+            // devTools: true,
+            preload: 'bookPreload.js'
+          }
+        })
+      }
+      //初始化阅读器
+      // ubWindow.webContents.openDevTools();
+      self.closeLoading();
+      setTimeout(function () {
+        const msg = {
+          type: 1,
+          data: self.state.user.data
+        }
+        window.services.sendMsg(ubWindow.webContents.id, msg);
+        self.nextPage(true);
+      },200)
+    });
   }
   /****  关闭阅读器  ****/
   closeBook = () => {
@@ -581,10 +578,6 @@ export default class App extends React.Component {
       e.target.style.background = rgb;
     })
   }
-  /****   打开设置  ****/
-  openSetting = (e) => {
-    this.setState({showSetting : true});
-  }
   /****  获取各系统按键的表现形式  ****/
   getCommandStr = () => {
     let btn = "Meta+"
@@ -602,8 +595,32 @@ export default class App extends React.Component {
     }
     return btn;
   }
-  /****   关闭设置  ****/
+  /****   打开关闭等待层  ****/
+  showLoading = (str,callback) => {
+    console.log('show loading')
+    let tmp = this.state.loading;
+    tmp.show = true;
+    tmp.msg = str;
+    this.setState({loading : JSON.parse(JSON.stringify(tmp))},() => {
+      setTimeout(function () {
+        callback();
+      },180)
+    });
+  }
+  closeLoading = () => {
+    console.log('close loading')
+    let tmp = this.state.loading;
+    tmp.show = false;
+    tmp.msg = '';
+    this.setState({loading : JSON.parse(JSON.stringify(tmp))});
+  }
+  /****   打开关闭设置  ****/
+  openSetting = (e) => {
+    console.log('show setting')
+    this.setState({showSetting : true});
+  }
   closeSetting = (e) => {
+    console.log('close setting')
     this.setState({showSetting : false});
   }
   /****   修改设置  ****/
@@ -776,7 +793,7 @@ export default class App extends React.Component {
                 let result = window.utools.db.put(self.state.list);
                 if(result && result.ok) {
                   self.setState({ list: JSON.parse(JSON.stringify(window.utools.db.get("list")))},()=>{
-                    self.readBook(null, curId);
+                    self.nextPage();
                   });
                 }
               }
@@ -794,10 +811,13 @@ export default class App extends React.Component {
   }
 
   render () {
-    const theme  = this.state.theme;
     return (
-      <ThemeProvider theme={themeDic[theme]}>
+      <ThemeProvider theme={themeDic[this.state.theme]}>
         <div className='app-page'>
+            <Backdrop open={this.state.loading.show}  className="app-loading" onClick={this.closeLoading}>
+              <Typography hidden={!this.state.loading.msg} style={{marginRight:'0.8rem'}}>{this.state.loading.msg}</Typography>
+              <CircularProgress color="inherit" style={{width:'30px',height:'30px'}}/>
+            </Backdrop>
             <AppBar position="static" className='app-bar'>
               <Toolbar style={{minHeight: '3rem'}}>
                 <Typography variant="h7" className='bar-title'>

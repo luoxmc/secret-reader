@@ -25,7 +25,7 @@
             border: none;
             background: none;
             outline: none;
-            max-width: 2.2rem;
+            width: 2.2rem;
         }
         #percent input:focus{
             border: 1px solid #8f8a8a82;
@@ -63,7 +63,7 @@
                 }
             } else if(res.type === 2 && res.data){
                 $("#bookContent").html(res.data);
-                $("#percent input").val(res.progress);
+                $("#percent input").val(res.progress).css("width", res.progress.toString().length * 0.45 + "rem");
             }
         });
 

@@ -1,6 +1,7 @@
 const fs = require('fs')
 const { ipcRenderer } = require('electron')
-const iconv = require('iconv-lite')
+const iconv = require('iconv-lite');
+const jschardet = require("jschardet")
 
 window.services = {
   readBook: (path) => {
@@ -9,9 +10,10 @@ window.services = {
     if(!buffer || buffer.length <= 0){
       return str;
     }
-    str = iconv.decode(buffer ,'utf8');
-    if(str.indexOf("�") !== -1){
-      str = iconv.decode(buffer ,'gbk');
+    let encodingCheck = jschardet.detect(buffer);
+    console.log(encodingCheck);
+    if(encodingCheck.confidence > 0.5){
+      str = iconv.decode(buffer , encodingCheck.encoding);
     }
     str = str.replace(/\t/g, "")
         .replace(/[，]\n/g, "，")

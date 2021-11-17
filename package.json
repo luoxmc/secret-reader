@@ -9,8 +9,10 @@
     "@material-ui/lab": "^4.0.0-alpha.58",
     "@material-ui/styles": "^4.11.4",
     "iconv-lite": "^0.4.24",
+    "jschardet": "^3.0.0",
     "react": "^17.0.1",
-    "react-dom": "^17.0.1"
+    "react-dom": "^17.0.1",
+    "vconsole": "^3.9.5"
   },
   "devDependencies": {
     "@babel/cli": "^7.14.5",
