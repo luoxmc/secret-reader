@@ -978,7 +978,8 @@ export default class App extends React.Component {
                     <Typography variant="overline" display="block" >
                       <span className='setting-label'>上一页</span>
                       <Input value={this.state.user.data.prev}  readOnly size="small" id='prev' inputProps={{ 'aria-label': 'description' }}
-                             onFocus={(e) => this.inputChange3(e)}/>
+                             onFocus={(e) => this.inputChange3(e)}
+                             onBlur={(e) => this.inputBlur(e)}/>
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
