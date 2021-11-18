@@ -11,7 +11,17 @@
         "explain": "摸鱼阅读神器",
         "cmds": [
           "read",
-          "摸鱼阅读"
+          "xiaoshuo",
+          "xs",
+          "摸鱼阅读",
+          {
+            "type": "files",
+            "label": "添加书籍",
+            "fileType": "file",
+            "match": "/^.{1,}.[tT][xX][tT]/",
+            "minLength": 1,
+            "maxLength": 1
+          }
         ]
       },
       {

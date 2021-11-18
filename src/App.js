@@ -54,8 +54,9 @@ export default class App extends React.Component {
 
   state = {
     theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+    deviceId: '',
     list: {
-      _id : 'list',
+      _id : '',
       data : [],
       _rev : ''
     },
@@ -76,7 +77,7 @@ export default class App extends React.Component {
       text: ''
     },
     user: {
-      _id : 'config',
+      _id : '',
       data : {
         bgColor: 'rgb(59, 62, 64, 0.8)',
         fontColor: 'rgb(187, 187, 187)',
@@ -107,7 +108,7 @@ export default class App extends React.Component {
       properties: ['openFile']
     })
     if(file && file.length > 0){
-      this.addBook(file[0])
+      this.addBook(file[0]);
     } else {
       this.showTip("请选择有效的txt文件");
     }
@@ -130,6 +131,16 @@ export default class App extends React.Component {
     if(name.length > 20){
       name = name.substring(0,20) + "...";
     }
+    let isAdded = false;
+    tmpList.data.forEach(function (dt) {
+      if(dt && dt.name === name){
+        isAdded = true;
+      }
+    })
+    if(isAdded){
+      this.showTip("书架中已有该书籍！");
+      return;
+    }
     tmpList.data.push({
       id : bookId,
       name : name,
@@ -137,12 +148,9 @@ export default class App extends React.Component {
       showRight: false,
       progress : 0
     })
-    if(!tmpList._rev){
-      delete tmpList._rev;
-    }
     let res1 = window.utools.db.put(tmpList);
     if(res1 && res1.ok) {
-      this.setState({list:JSON.parse(JSON.stringify(window.utools.db.get("list")))});
+      this.setState({list:JSON.parse(JSON.stringify(window.utools.db.get(this.state.deviceId+"/list")))});
     }
   }
   /****  删除书籍  *****/
@@ -156,7 +164,7 @@ export default class App extends React.Component {
         })
         let res = window.utools.db.put(self.state.list);
         if(res && res.ok) {
-          this.setState({list:JSON.parse(JSON.stringify(window.utools.db.get("list")))});
+          this.setState({list:JSON.parse(JSON.stringify(window.utools.db.get(this.state.deviceId+"/list")))});
         }
       }
     })
@@ -293,7 +301,7 @@ export default class App extends React.Component {
                     let res = window.utools.db.put(self.state.list);
                     if(res && res.ok) {
                       const book_id = self.state.chapter.bookId;
-                      self.setState({ list: JSON.parse(JSON.stringify(window.utools.db.get("list")))},()=>{
+                      self.setState({ list: JSON.parse(JSON.stringify(window.utools.db.get(self.state.deviceId+"/list")))},()=>{
                         self.readBook(null, book_id);
                       });
                     }
@@ -365,7 +373,7 @@ export default class App extends React.Component {
         let res = window.utools.db.put(self.state.list);
         if(res && res.ok) {
           const book_id = self.state.search.bookId;
-          self.setState({ list: JSON.parse(JSON.stringify(window.utools.db.get("list")))},()=>{
+          self.setState({ list: JSON.parse(JSON.stringify(window.utools.db.get(self.state.deviceId+"/list")))},()=>{
             self.readBook(null, book_id);
           });
         }
@@ -499,7 +507,7 @@ export default class App extends React.Component {
           }
           let res = window.utools.db.put(self.state.list);
           if(res && res.ok) {
-            self.setState({ list: JSON.parse(JSON.stringify(window.utools.db.get("list")))},()=>{
+            self.setState({ list: JSON.parse(JSON.stringify(window.utools.db.get(self.state.deviceId+"/list")))},()=>{
               const str = curContent.substring(dt.progress , dt.progress + Number(self.state.user.data.numOfPage));
               let ps = (Math.round(((dt.progress + Number(self.state.user.data.numOfPage))/curContent.length)*10000))/100 > 100 ? 100 : (Math.round(((dt.progress + Number(self.state.user.data.numOfPage))/curContent.length)*10000))/100;
               const msg = {
@@ -527,7 +535,7 @@ export default class App extends React.Component {
           dt.progress = (Number(dt.progress) - Number(self.state.user.data.numOfPage)) < 0 ? 0 : (Number(dt.progress) - Number(self.state.user.data.numOfPage));
           let res = window.utools.db.put(self.state.list);
           if(res && res.ok) {
-            self.setState({ list: JSON.parse(JSON.stringify(window.utools.db.get("list")))},()=>{
+            self.setState({ list: JSON.parse(JSON.stringify(window.utools.db.get(self.state.deviceId+"/list")))},()=>{
               const str = curContent.substring(dt.progress , dt.progress + Number(self.state.user.data.numOfPage));
               let ps = (Math.round(((dt.progress + Number(self.state.user.data.numOfPage))/curContent.length)*10000))/100 > 100 ? 100 : (Math.round(((dt.progress + Number(self.state.user.data.numOfPage))/curContent.length)*10000))/100;
               const msg = {
@@ -641,7 +649,7 @@ export default class App extends React.Component {
       return;
     }
     if(config._rev){
-      config._rev = window.utools.db.get("config")._rev;
+      config._rev = window.utools.db.get(this.state.deviceId+"/config")._rev;
     }
     config.data.numOfPage = Number(config.data.numOfPage);
     config.data.autoPage = Number(config.data.autoPage) || 0;
@@ -666,7 +674,7 @@ export default class App extends React.Component {
     }
     let res = window.utools.db.put(config);
     if(res && res.ok) {
-      this.setState({user : JSON.parse(JSON.stringify(window.utools.db.get("config")))}, () => {
+      this.setState({user : JSON.parse(JSON.stringify(window.utools.db.get(this.state.deviceId+"/config")))}, () => {
         if(ubWindow){
           const msg = {
             type: 1,
@@ -742,6 +750,9 @@ export default class App extends React.Component {
 
   componentDidMount () {
     window.utools.onPluginEnter(enter => {
+      if(enter && enter.type === 'files' && enter.payload[0] && enter.payload[0].isFile){
+        this.addBook(enter.payload[0].path);
+      }
       if(enter && enter.code === 'close-reader'){
         this.closeBook();
         window.utools.hideMainWindow();
@@ -749,22 +760,46 @@ export default class App extends React.Component {
     })
     window.utools.onPluginReady(() => {
       //查询用户书籍信息
-      const list = window.utools.db.get("list");
+      const list = window.utools.db.get(window.utools.getNativeId() + "/list");
       if(list){
-        this.setState({list:JSON.parse(JSON.stringify(list))});
+        let state = this.state;
+        state.deviceId = window.utools.getNativeId();
+        state.list = list;
+        this.setState(JSON.parse(JSON.stringify(state)));
+      } else {
+        let state = this.state;
+        state.deviceId = window.utools.getNativeId();
+        state.list._id = window.utools.getNativeId()+"/list";
+        this.setState(state,() => {
+          if(!state.list._rev){
+            delete state.list._rev;
+          }
+          let res = window.utools.db.put(state.list);
+          if(res && res.ok){
+            state.list._rev = res.rev;
+            this.setState(JSON.parse(JSON.stringify(state)));
+          } else {
+            this.showTip("查询用户配置出错，请在[utools-账号与数据]栏目删除本程序数据后重试!")
+          }
+        } )
       }
       //查询用户设置
-      let config = window.utools.db.get("config");
+      let config = window.utools.db.get(this.state.deviceId+"/config");
       if(!config){
         //暂无设置，使用默认配置并存库
         config = this.state.user;
         config.data.x = window.screenLeft + 90;
         config.data.y = window.screenTop + 180;
-        console.log(config)
         if(!config._rev){
           delete config._rev;
         }
-        window.utools.db.put(config);
+        config._id = window.utools.getNativeId()+"/config";
+        let res = window.utools.db.put(config);
+        if(res && res.ok){
+          config._rev = res.rev;
+        } else {
+          this.showTip("查询用户配置出错，请在[utools-账号与数据]栏目删除本程序数据后重试!")
+        }
       }
       this.setState({user : JSON.parse(JSON.stringify(config))}, () => {
         let self = this;
@@ -772,7 +807,7 @@ export default class App extends React.Component {
         window.services.receiveMsg(function (res){
           if(res && res.type === 3){
             //修改阅读器窗口大小和位置
-            let conf = window.utools.db.get("config");
+            let conf = window.utools.db.get(self.state.deviceId+"/config");
             conf.data.winWidth = res.data.width;
             conf.data.winHeight = res.data.height;
             conf.data.x = res.data.left;
@@ -797,7 +832,7 @@ export default class App extends React.Component {
                 dt.progress = parseInt((curContent.length * (res.data/100)).toString());
                 let result = window.utools.db.put(self.state.list);
                 if(result && result.ok) {
-                  self.setState({ list: JSON.parse(JSON.stringify(window.utools.db.get("list")))},()=>{
+                  self.setState({ list: JSON.parse(JSON.stringify(window.utools.db.get(self.state.deviceId+"/list")))},()=>{
                     self.nextPage();
                   });
                 }
