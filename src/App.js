@@ -452,17 +452,18 @@ export default class App extends React.Component {
       }
       if(!ubWindow){
         ubWindow = window.utools.createBrowserWindow('book.html', {
-          useContentSize: true,
+          useContentSize : true,
+          skipTaskbar : true,
           width : self.state.user.data.winWidth ,
           height : self.state.user.data.winHeight,
           x: self.state.user.data.x,
           y: self.state.user.data.y,
           alwaysOnTop : true,
           frame : false,
-          transparent: true,
-          backgroundColor: '#00000000',
-          hasShadow: false,
-          webPreferences: {
+          transparent : true,
+          backgroundColor : '#00000000',
+          hasShadow : false,
+          webPreferences : {
             // devTools: true,
             preload: 'bookPreload.js'
           }
