@@ -9,7 +9,7 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            padding: 5px;
+            padding: 2px 5px;
             box-sizing: border-box;
             -webkit-user-select:none;
             -moz-user-select:none;
@@ -202,6 +202,9 @@
         }
 
         function sendWindowData(){
+            if(window.screenLeft <= 10 || window.screenLeft > 8000 || window.screenTop <= 10 || window.screenTop > 8000){
+                return;
+            }
             let msg = {
                 type: 3,
                 data: {

@@ -806,6 +806,10 @@ export default class App extends React.Component {
           this.showTip("查询用户配置出错，请在[utools-账号与数据]栏目删除本程序数据后重试!")
         }
       }
+      if(config.data.x <= 10 || config.data.x > 8000 || config.data.y <= 10 || config.data.y > 8000){
+        config.data.x = window.screenLeft + 90;
+        config.data.y = window.screenTop + 180;
+      }
       this.setState({user : JSON.parse(JSON.stringify(config))}, () => {
         let self = this;
         //接受子窗口消息
@@ -855,10 +859,7 @@ export default class App extends React.Component {
       });
     })
     window.utools.onPluginOut(() => {
-      if(ubWindow && !ubWindow.isDestroyed()){
-        ubWindow.close();
-      }
-      ubWindow = null;
+
     })
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
       this.setState({ theme: e.matches ? 'dark' : 'light' })
