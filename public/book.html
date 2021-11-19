@@ -71,6 +71,13 @@
             sendWindowData();
         }
 
+        window.onbeforeunload = function(e) {
+            let msg = {
+                type: 6
+            }
+            window.bookServices.sendMsg(msg);
+        };
+
         setInterval(function (){
             const nowLeft = window.screenLeft;
             const nowTop = window.screenTop;

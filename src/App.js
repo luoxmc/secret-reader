@@ -467,6 +467,7 @@ export default class App extends React.Component {
             preload: 'bookPreload.js'
           }
         }, () => {
+          document.getElementById('closeBtn').style.color = '#000000DD';
           //初始化阅读器
           // ubWindow.webContents.openDevTools();
           const msg = {
@@ -486,10 +487,13 @@ export default class App extends React.Component {
   closeBook = () => {
     console.log('close book');
     if(ubWindow){
-      ubWindow.close();
+      if (!ubWindow.isDestroyed()) {
+        ubWindow.close();
+      }
       ubWindow = null;
       curContent = '';
       curId = null;
+      document.getElementById('closeBtn').style.color = '#ada9a9';
     }
   }
   /****  下一页  ****/
@@ -759,6 +763,7 @@ export default class App extends React.Component {
       }
     })
     window.utools.onPluginReady(() => {
+      document.getElementById('closeBtn').style.color = '#ada9a9';
       //查询用户书籍信息
       const list = window.utools.db.get(window.utools.getNativeId() + "/list");
       if(list){
@@ -838,12 +843,22 @@ export default class App extends React.Component {
                 }
               }
             })
+          } else if (res && res.type === 6){
+            //阅读器窗口被关闭
+            setTimeout(function (){
+              if(ubWindow){
+                self.closeBook();
+              }
+            },150);
           }
         })
       });
     })
     window.utools.onPluginOut(() => {
-
+      if(ubWindow && !ubWindow.isDestroyed()){
+        ubWindow.close();
+      }
+      ubWindow = null;
     })
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
       this.setState({ theme: e.matches ? 'dark' : 'light' })
@@ -863,7 +878,7 @@ export default class App extends React.Component {
                 <Typography variant="h7" className='bar-title'>
                   我的书架
                 </Typography>
-                <Button className='bar-close' className={["bar-close", ubWindow ? null:'dis'].join(' ')} variant="contained" onClick={this.closeBook}>关闭阅读器</Button>
+                <Button className='bar-close' id='closeBtn' variant="contained" onClick={this.closeBook}>关闭阅读器</Button>
                 <Settings className='bar-setting' onClick={this.openSetting}/>
               </Toolbar>
             </AppBar>
