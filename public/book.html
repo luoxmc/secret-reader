@@ -6,7 +6,6 @@
     <script src="jquery.js"></script>
     <style>
         #bookContent {
-            webkit-app-region: drag;
             width: 100%;
             height: 100%;
             overflow: hidden;
@@ -41,7 +40,7 @@
 </head>
 <body style="margin: 0;width: 100%;height: 100%;">
     <div id="bookContent"></div>
-    <div id="percent" style=""><input type="number" oninput="percentChange()" />%</div>
+    <div id="percent" style="-webkit-app-region: no-drag;"><input type="number" oninput="percentChange()" />%</div>
     <script>
         let windowLeft = window.screenLeft;
         let windowTop = window.screenTop;
@@ -54,9 +53,14 @@
                 config = res.data;
                 $("#bookContent").css("background",config.bgColor).css("color",config.fontColor).css("font-size",config.fontSize + 'px');
                 $("#percent").css("color",config.fontColor).css("font-size",(config.fontSize-2) + 'px');
+                $("#bookContent").css("-webkit-app-region",config.isMove ? "drag" : "no-drag");
                 $("#percent input").css("color",config.fontColor)
                 document.removeEventListener('keydown',keyListen);
                 document.addEventListener('keydown', keyListen);
+                document.removeEventListener("mousedown",mousePage);
+                if(config.mouseType !== 0){
+                    document.addEventListener("mousedown",mousePage);
+                }
                 if(config && config.autoPage && config.autoPage !== 0){
                     setPageInterval();
                 } else {
@@ -188,6 +192,31 @@
                         }
                     }
                 }
+            }
+        }
+
+        function mousePage (e){
+            let prevKey = null;
+            let nextKey = null;
+            if(config.mouseType === 1){
+                prevKey = 0;
+                nextKey = 2;
+            } else if (config.mouseType === 2){
+                prevKey = 2;
+                nextKey = 0;
+            } else {
+                return;
+            }
+            if(e.button !== prevKey && e.button !== nextKey){
+                return;
+            }
+            let msg = {
+                type: 4,
+                data: e.button === prevKey ? "prev" : "next"
+            }
+            window.bookServices.sendMsg(msg);
+            if(config && config.autoPage && config.autoPage !== 0){
+                setPageInterval();
             }
         }
 

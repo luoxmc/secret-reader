@@ -11,9 +11,9 @@ window.services = {
       return str;
     }
     let encodingCheck = {};
-    if(buffer.byteLength > 2000){
-      let tmpBuffer = new Buffer(2000);
-      buffer.copy(tmpBuffer,0,0,2000);
+    if(buffer.byteLength > 1200){
+      let tmpBuffer = new Buffer(1200);
+      buffer.copy(tmpBuffer,0,0,1200);
       encodingCheck = jschardet.detect(tmpBuffer);
     } else {
       encodingCheck = jschardet.detect(buffer);
@@ -21,8 +21,7 @@ window.services = {
     if(encodingCheck.confidence > 0.5){
       str = iconv.decode(buffer , encodingCheck.encoding);
     }
-    str = str.replace(/\t/g, "")
-        .replace(/[，]\n/g, "，")
+    str = str.replace(/\t/g, "").replace(/[，]\n/g, "，")
         .replace(/[。]\n/g, "。").replace(/[？]\n/g, "？")
         .replace(/[！]\n/g, "！").replace(/[,]\n/g, ",")
         .replace(/[.]\n/g, ".").replace(/[?]\n/g, "?")

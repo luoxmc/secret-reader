@@ -3,9 +3,9 @@ import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles'
 import {
   Grid, Paper, MenuList, MenuItem, List, ListItem, ListItemText, ClickAwayListener, Card, Input, Slider, Divider,
   Snackbar, AppBar, Toolbar, Typography, Dialog, DialogContent, DialogTitle, DialogActions, Button, CardContent,
-  Backdrop, CircularProgress
+  Backdrop, CircularProgress, Switch, Select
 } from '@material-ui/core';
-import {AddCircle, Search, Settings} from '@material-ui/icons';
+import {AddCircle, Search, Settings, HelpTwoTone} from '@material-ui/icons';
 
 window.platform = {
   isMacOs: window.utools.isMacOs(),
@@ -90,7 +90,9 @@ export default class App extends React.Component {
         y: 300,
         autoPage: 0,
         prev: window.platform.isMacOs ? 'Command+ArrowLeft' : 'Control+[',
-        next: window.platform.isMacOs ? 'Command+ArrowRight' : 'Control+]'
+        next: window.platform.isMacOs ? 'Command+ArrowRight' : 'Control+]',
+        isMove: true,
+        mouseType: 0
       },
       _rev : ''
     },
@@ -175,36 +177,32 @@ export default class App extends React.Component {
     e.stopPropagation();
     this.closeRightMenu();
     let self = this;
-    this.state.list.data.forEach(function(dt){
-      if(dt && dt.id === id){
-        let str = window.services.readBook(dt.path)
-        if(str){
-          let chapters = self.getChapters(str);
-          if(chapters && chapters.length > 0){
-            self.state.chapter = { list : chapters, bookId: id, showChapterList : true};
-            self.setState({chapter: JSON.parse(JSON.stringify(self.state.chapter))});
-            let index = 0;
-            let timer = setInterval(function (){
-              index ++;
-              if(document.body.clientHeight && document.getElementById('chapterList') && document.getElementById('chapterList').clientHeight){
-                const top = (document.body.clientHeight - document.getElementById('chapterList').clientHeight)/2 + 'px';
-                const left = (document.body.clientWidth - document.getElementById('chapterList').clientWidth)/2 + 'px';
-                document.getElementById('chapterList').style.top = top;
-                document.getElementById('chapterList').style.left = left;
-                clearInterval(timer);
-              }
-              if(index > 10){
-                clearInterval(timer);
-              }
-            },50);
+    this.showLoading('', function () {
+      self.state.list.data.forEach(function(dt){
+        if(dt && dt.id === id){
+          let str = window.services.readBook(dt.path)
+          if(str){
+            let chapters = self.getChapters(str);
+            if(chapters && chapters.length > 0){
+              self.state.chapter = { list : chapters, bookId: id, showChapterList : true};
+              self.setState({chapter: JSON.parse(JSON.stringify(self.state.chapter))},() => {
+                if(document.body.clientHeight && document.getElementById('chapterList') && document.getElementById('chapterList').clientHeight){
+                  const top = (document.body.clientHeight - document.getElementById('chapterList').clientHeight)/2 + 'px';
+                  const left = (document.body.clientWidth - document.getElementById('chapterList').clientWidth)/2 + 'px';
+                  document.getElementById('chapterList').style.top = top;
+                  document.getElementById('chapterList').style.left = left;
+                }
+              });
+            } else {
+              self.showTip('未检索到章节列表，请检查文本内容格式！');
+            }
+            str = null;
           } else {
-            self.showTip('未检索到章节列表，请检查文本内容格式！');
+            self.showTip('获取文件内容失败，请检查!');
           }
-          str = null;
-        } else {
-          self.showTip('获取文件内容失败，请检查!');
         }
-      }
+      })
+      self.closeLoading();
     })
   }
   /****  关闭章节列表  ****/
@@ -418,37 +416,39 @@ export default class App extends React.Component {
     return result;
   }
   /****  开始阅读  ****/
-  readBook = (e,id) => {
+  readBook = (e,id,reload) => {
     console.log('start read book')
     if(id === curId && ubWindow) {
       return;
     }
     let self = this;
     this.showLoading('文件编码格式检查中，请稍后...',function () {
-      let flag = true;
-      self.state.list.data.forEach(function(dt) {
-        if (dt && dt.id === id) {
-          if(!window.services.checkFile(dt.path)){
-            self.showTip("该路径下文件已不存在或不可读");
-            flag = false;
-          } else {
-            let str = window.services.readBook(dt.path)
-            if (str) {
-              curContent = str;
-              str = null;
-            } else {
-              self.showTip("解析文件失败，文件编码不支持");
+      if(!reload){
+        let flag = true;
+        self.state.list.data.forEach(function(dt) {
+          if (dt && dt.id === id) {
+            if(!window.services.checkFile(dt.path)){
+              self.showTip("该路径下文件已不存在或不可读");
               flag = false;
+            } else {
+              let str = window.services.readBook(dt.path)
+              if (str) {
+                curContent = str;
+                str = null;
+              } else {
+                self.showTip("解析文件失败，文件编码不支持");
+                flag = false;
+              }
             }
           }
+        });
+        if(!flag){
+          self.closeLoading();
+          return;
         }
-      });
-      if(!flag){
-        self.closeLoading();
-        return;
-      }
-      if(id !== curId) {
-        curId = id;
+        if(id !== curId) {
+          curId = id;
+        }
       }
       if(!ubWindow){
         ubWindow = window.utools.createBrowserWindow('book.html', {
@@ -680,12 +680,13 @@ export default class App extends React.Component {
     let res = window.utools.db.put(config);
     if(res && res.ok) {
       this.setState({user : JSON.parse(JSON.stringify(window.utools.db.get(this.state.deviceId+"/config")))}, () => {
-        if(ubWindow){
-          const msg = {
-            type: 1,
-            data: this.state.user.data
-          }
-          window.services.sendMsg(ubWindow.webContents.id, msg);
+        if(ubWindow && !ubWindow.isDestroyed()){
+          ubWindow.close();
+          ubWindow = null;
+          let self = this;
+          setTimeout(function () {
+            self.readBook(null,curId,true);
+          },150);
         }
       });
     }
@@ -716,6 +717,16 @@ export default class App extends React.Component {
   inputChange5 = (e) => {
     let config = this.state.user;
     config.data[e.target.getAttribute('id')] = e.target.value;
+    this.setState({user : JSON.parse(JSON.stringify(config))});
+  }
+  inputChange6 = (e) => {
+    let config = this.state.user;
+    config.data.isMove = !config.data.isMove;
+    this.setState({user : JSON.parse(JSON.stringify(config))});
+  }
+  inputChange7 = (e) => {
+    let config = this.state.user;
+    config.data.mouseType =  e.target.value;
     this.setState({user : JSON.parse(JSON.stringify(config))});
   }
   inputBlur = (e) => {
@@ -805,6 +816,11 @@ export default class App extends React.Component {
           config._rev = res.rev;
         } else {
           this.showTip("查询用户配置出错，请在[utools-账号与数据]栏目删除本程序数据后重试!")
+        }
+      }
+      for (let dataKey in this.state.user.data) {
+        if(!config.data.hasOwnProperty(dataKey)){
+          config.data[dataKey] = this.state.user.data[dataKey];
         }
       }
       if(config.data.x <= 10 || config.data.x > 8000 || config.data.y <= 10 || config.data.y > 8000){
@@ -910,6 +926,7 @@ export default class App extends React.Component {
                 </Grid>
               </Grid>
             </Grid>
+            {/*<HelpTwoTone className='help-icon'/>*/}
             <Card hidden={!this.state.chapter.showChapterList} className='chapter-list' id='chapterList' variant="outlined">
               <ClickAwayListener onClickAway={this.closeChapterMenu}>
                 <List component="nav" aria-label="secondary mailbox folders">
@@ -971,10 +988,22 @@ export default class App extends React.Component {
                              placeholder='只支持rgb颜色值' onChange={(e) => this.inputChange5(e)}/>
                     </Typography>
                   </Grid>
-                  <Grid item xs={12} sm={12}>
+                  <Grid item xs={12} sm={6}>
                     <Typography variant="overline" display="block" >
                       <span className='setting-label'>透明度</span>
                       <Slider id='opacity' className='setting-slide' value={this.state.user.data.opacity} onChange={this.slideChange} aria-labelledby="discrete-slider" valueLabelDisplay="auto" step={0.1} marks min={0} max={1}/>
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="overline" display="block" >
+                      <span className='setting-label'>窗口移动</span>
+                      <Switch
+                          checked={this.state.user.data.isMove}
+                          onChange={this.inputChange6}
+                          color="primary"
+                          name="is-move"
+                          inputProps={{ 'aria-label': 'primary checkbox' }}
+                      />
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1005,6 +1034,16 @@ export default class App extends React.Component {
                       <Input value={this.state.user.data.next} readOnly size="small" id='next' inputProps={{ 'aria-label': 'description' }}
                              onFocus={(e) => this.inputChange3(e)}
                              onBlur={(e) => this.inputBlur(e)} />
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="overline" display="block" >
+                      <span className='setting-label'>鼠标翻页</span>
+                      <Select value={this.state.user.data.mouseType} onChange={this.inputChange7} style={{maxWidth:'11.5rem',fontSize:'0.9rem'}}>
+                        <MenuItem value={0}>无需鼠标翻页</MenuItem>
+                        <MenuItem value={1}>上一页:左键;下一页:右键;</MenuItem>
+                        <MenuItem value={2}>上一页:右键;下一页:左键;</MenuItem>
+                      </Select>
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
