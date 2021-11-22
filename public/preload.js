@@ -11,14 +11,14 @@ window.services = {
       return str;
     }
     let encodingCheck = {};
-    if(buffer.byteLength > 1200){
-      let tmpBuffer = new Buffer(1200);
-      buffer.copy(tmpBuffer,0,0,1200);
+    if(buffer.byteLength > 2500){
+      let tmpBuffer = new Buffer(2500);
+      buffer.copy(tmpBuffer,0,0,2500);
       encodingCheck = jschardet.detect(tmpBuffer);
     } else {
       encodingCheck = jschardet.detect(buffer);
     }
-    if(encodingCheck.confidence > 0.5){
+    if(encodingCheck.confidence > 0.45){
       str = iconv.decode(buffer , encodingCheck.encoding);
     }
     str = str.replace(/\t/g, "").replace(/[，]\n/g, "，")
