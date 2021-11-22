@@ -97,6 +97,7 @@ export default class App extends React.Component {
       _rev : ''
     },
     showSetting: false,
+    showHelp: false,
     loading: {
       show: false,
       msg: ''
@@ -641,6 +642,15 @@ export default class App extends React.Component {
     console.log('close setting')
     this.setState({showSetting : false});
   }
+  /****   打开关闭使用说明  ****/
+  showHelp = (e) => {
+    console.log('show help')
+    this.setState({showHelp : true});
+  }
+  closeHelp = (e) => {
+    console.log('close help')
+    this.setState({showHelp : false});
+  }
   /****   修改设置  ****/
   saveConfig = (e) => {
     let config = this.state.user;
@@ -926,7 +936,32 @@ export default class App extends React.Component {
                 </Grid>
               </Grid>
             </Grid>
-            {/*<HelpTwoTone className='help-icon'/>*/}
+            <HelpTwoTone className='help-icon' onClick={this.showHelp}/>
+            <Dialog onClose={this.closeHelp} aria-labelledby="customized-dialog-title" open={this.state.showHelp}>
+              <DialogTitle id="customized-dialog-title">
+                使用说明
+              </DialogTitle>
+              <DialogContent dividers>
+                <Typography gutterBottom>
+                  <b style={{color:'#d25353'}}>格式支持</b>  <br/> 目前只支持txt格式文件，支持各种常见的编码格式，如utf-8、utf-16、gbk、gb2312、gb18030等。
+                </Typography>
+                <Typography gutterBottom>
+                  <b style={{color:'#d25353'}}>如何设置老板键</b> <br/> 老板键用于快速关闭阅读窗口，使用方法：在"utools-偏好设置-全局快捷键"栏目添加快捷键，关键字填入close-fish-book即可
+                </Typography>
+                <Typography gutterBottom>
+                  <b style={{color:'#d25353'}}>设置-颜色</b> <br/> 只支持输入保存rgb和rgba色值，也可以使用取色工具取色。
+                </Typography>
+                <Typography gutterBottom>
+                  <b style={{color:'#d25353'}}>设置-窗口移动</b> <br/> 此设置可以切换窗口移动模式和固定模式。ps：windows机器下开启窗口移动会导致鼠标翻页失效。
+                </Typography>
+                <Typography gutterBottom>
+                  <b style={{color:'#d25353'}}>设置-快捷键</b> <br/> 快捷键只能在阅读窗口激活（focus）的情况下有效，该插件快捷键优先级很低，请避免与系统中其他快捷键冲突。
+                </Typography>
+                <Typography gutterBottom>
+                  <b style={{color:'#d25353'}}>设置-自动翻页</b> <br/> 单位：秒，设置为0即为关闭自动翻页。
+                </Typography>
+              </DialogContent>
+            </Dialog>
             <Card hidden={!this.state.chapter.showChapterList} className='chapter-list' id='chapterList' variant="outlined">
               <ClickAwayListener onClickAway={this.closeChapterMenu}>
                 <List component="nav" aria-label="secondary mailbox folders">
