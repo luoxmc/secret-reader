@@ -112,6 +112,8 @@ export default class App extends React.Component {
     })
     if(file && file.length > 0){
       this.addBook(file[0]);
+    } else if (file === undefined){
+      console.log("user cancel");
     } else {
       this.showTip("请选择有效的txt文件");
     }
@@ -783,6 +785,16 @@ export default class App extends React.Component {
         this.closeBook();
         window.utools.hideMainWindow();
       }
+      if(enter && enter.code === 'toggle-reader'){
+        if(ubWindow && !ubWindow.isDestroyed()){
+          if(ubWindow.isVisible()){
+            ubWindow.hide();
+          } else {
+            ubWindow.show();
+          }
+        }
+        window.utools.hideMainWindow();
+      }
     })
     window.utools.onPluginReady(() => {
       document.getElementById('closeBtn').style.color = '#ada9a9';
@@ -938,7 +950,7 @@ export default class App extends React.Component {
             </Grid>
             <HelpTwoTone className='help-icon' onClick={this.showHelp}/>
             <Dialog onClose={this.closeHelp} aria-labelledby="customized-dialog-title" open={this.state.showHelp}>
-              <DialogTitle id="customized-dialog-title">
+              <DialogTitle id="customized-dialog-title" style={{padding:'8px 20px'}}>
                 使用说明
               </DialogTitle>
               <DialogContent dividers>
@@ -946,7 +958,7 @@ export default class App extends React.Component {
                   <b style={{color:'#d25353'}}>格式支持</b>  <br/> 目前只支持txt格式文件，支持各种常见的编码格式，如utf-8、utf-16、gbk、gb2312、gb18030等。
                 </Typography>
                 <Typography gutterBottom>
-                  <b style={{color:'#d25353'}}>如何设置老板键</b> <br/> 老板键用于快速关闭阅读窗口，使用方法：在"utools-偏好设置-全局快捷键"栏目添加快捷键，关键字填入close-fish-book即可
+                  <b style={{color:'#d25353'}}>如何设置老板键</b> <br/> 老板键用于快速关闭或隐藏阅读窗口，使用方法：在"utools-偏好设置-全局快捷键"栏目添加快捷键，关键字填入close-fish-book即可快速关闭，关键字填入toggle-show-fish-book即可快速显示/隐藏阅读窗口。
                 </Typography>
                 <Typography gutterBottom>
                   <b style={{color:'#d25353'}}>设置-颜色</b> <br/> 只支持输入保存rgb和rgba色值，也可以使用取色工具取色。

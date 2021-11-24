@@ -30,6 +30,13 @@
         "cmds": [
           "close-fish-book"
         ]
+      },
+      {
+        "code": "toggle-reader",
+        "explain": "隐藏/显示摸鱼阅读器",
+        "cmds": [
+          "toggle-show-fish-book"
+        ]
       }
   ]
 }
