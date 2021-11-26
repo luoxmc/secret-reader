@@ -303,7 +303,10 @@ export default class App extends React.Component {
                     if(res && res.ok) {
                       const book_id = self.state.chapter.bookId;
                       self.setState({ list: JSON.parse(JSON.stringify(window.utools.db.get(self.state.deviceId+"/list")))},()=>{
-                        self.readBook(null, book_id);
+                        self.closeBook();
+                        setTimeout(function () {
+                          self.readBook(null, book_id,false);
+                        },150);
                       });
                     }
                 } else {
@@ -375,7 +378,10 @@ export default class App extends React.Component {
         if(res && res.ok) {
           const book_id = self.state.search.bookId;
           self.setState({ list: JSON.parse(JSON.stringify(window.utools.db.get(self.state.deviceId+"/list")))},()=>{
-            self.readBook(null, book_id);
+            self.closeBook();
+            setTimeout(function () {
+              self.readBook(null, book_id,false);
+            },150);
           });
         }
         self.closeSearch();
