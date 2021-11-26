@@ -40,6 +40,7 @@
 </head>
 <body style="margin: 0;width: 100%;height: 100%;">
     <div id="bookContent"></div>
+    <div style="display: none;position: fixed;width: 100%;height: 100%;left: 0; top: 0;-webkit-app-region: no-drag;" id="cover"></div>
     <div id="percent" style="-webkit-app-region: no-drag;"><input type="number" oninput="percentChange()" />%</div>
     <script>
         let windowLeft = window.screenLeft;
@@ -110,14 +111,24 @@
             }
         })
 
-        $("#percent input").focus(function () {
+        $("#percent input").focus(function (e) {
             tmpProgress = $("#percent input").val();
+            $("#cover").show();
+            $("#bookContent").css("filter","blur(2px)");
+            $("#percent input").width($("#percent input").width() * 1.5 + "px").css("margin-right","3px");
+            $("#percent input").height($("#percent input").height() * 1.3 + "px");
+            $("#percent").css("font-size",(config.fontSize + 2) + 'px');
         })
 
         $("#percent input").blur(function () {
             if(tmpProgress){
                 $("#percent input").val(tmpProgress);
             }
+            $("#cover").hide();
+            $("#bookContent").css("filter","blur(0px)");
+            $("#percent input").width($("#percent input").width() / 1.5 + "px").css("margin-right","0px");
+            $("#percent input").height($("#percent input").height() / 1.3 + "px");
+            $("#percent").css("font-size",(config.fontSize - 2) + 'px');
         })
 
         function percentChange (){
