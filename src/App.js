@@ -488,6 +488,9 @@ export default class App extends React.Component {
           self.nextPage(true);
         })
       } else {
+        if(!ubWindow.isVisible()){
+          ubWindow.show();
+        }
         self.nextPage(true);
       }
       self.closeLoading();
@@ -708,6 +711,45 @@ export default class App extends React.Component {
         }
       });
     }
+    this.showTip("设置保存成功");
+    this.closeSetting();
+  }
+  /****  恢复默认设置  ****/
+  defaultSetting = (e) => {
+    let config = this.state.user;
+    config.data = {
+      bgColor: 'rgb(59, 62, 64, 0.8)',
+          fontColor: 'rgb(187, 187, 187)',
+        opacity: 0.8,
+        fontSize: 14,
+        numOfPage: 100,
+        winWidth: 800,
+        winHeight: 55,
+        autoPage: 0,
+        prev: window.platform.isMacOs ? 'Command+ArrowLeft' : 'Control+[',
+        next: window.platform.isMacOs ? 'Command+ArrowRight' : 'Control+]',
+        isMove: true,
+        mouseType: 0
+    };
+    config.data.x = window.screenLeft + 90;
+    config.data.y = window.screenTop + 180;
+    if(!config._rev){
+      delete config._rev;
+    }
+    let res = window.utools.db.put(config);
+    if(res && res.ok) {
+      this.setState({user : JSON.parse(JSON.stringify(window.utools.db.get(this.state.deviceId+"/config")))}, () => {
+        if(ubWindow && !ubWindow.isDestroyed()){
+          ubWindow.close();
+          ubWindow = null;
+          let self = this;
+          setTimeout(function () {
+            self.readBook(null,curId,true);
+          },150);
+        }
+      });
+    }
+    this.showTip("恢复默认设置成功");
     this.closeSetting();
   }
   /****  输入框修改  ****/
@@ -1110,6 +1152,7 @@ export default class App extends React.Component {
                 </Grid>
               </DialogContent>
               <DialogActions>
+                <Button color="secondary" onClick={this.defaultSetting}>恢复默认设置</Button>
                 <Button autoFocus color="primary" onClick={this.saveConfig}>保存</Button>
               </DialogActions>
             </Dialog>
