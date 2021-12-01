@@ -516,11 +516,10 @@ export default class App extends React.Component {
       let self = this;
       this.state.list.data.forEach(function(dt) {
         if (dt && dt.id === curId) {
-          if(dt.progress === curContent.length){
-            return;
-          }
           if(!reader){
-            dt.progress = (Number(dt.progress) + Number(self.state.user.data.numOfPage)) > curContent.length ? curContent.length : (Number(dt.progress) + Number(self.state.user.data.numOfPage));
+            if(dt.progress + Number(self.state.user.data.numOfPage) < curContent.length){
+              dt.progress = Number(dt.progress) + Number(self.state.user.data.numOfPage)
+            }
           }
           let res = window.utools.db.put(self.state.list);
           if(res && res.ok) {
@@ -836,8 +835,18 @@ export default class App extends React.Component {
       if(enter && enter.code === 'toggle-reader'){
         if(ubWindow && !ubWindow.isDestroyed()){
           if(ubWindow.isVisible()){
+            const msg = {
+              type: 7,
+              data: "hide"
+            }
+            window.services.sendMsg(ubWindow.webContents.id, msg);
             ubWindow.hide();
           } else {
+            const msg = {
+              type: 7,
+              data: "show"
+            }
+            window.services.sendMsg(ubWindow.webContents.id, msg);
             ubWindow.show();
           }
         }
@@ -1018,7 +1027,7 @@ export default class App extends React.Component {
                   <b style={{color:'#d25353'}}>设置-快捷键</b> <br/> 快捷键只能在阅读窗口激活（focus）的情况下有效，该插件快捷键优先级很低，请避免与系统中其他快捷键冲突。
                 </Typography>
                 <Typography gutterBottom>
-                  <b style={{color:'#d25353'}}>设置-自动翻页</b> <br/> 单位：秒，设置为0即为关闭自动翻页。
+                  <b style={{color:'#d25353'}}>设置-自动翻页</b> <br/> 单位：秒，设置为0即为关闭自动翻页。快捷键隐藏阅读窗口后自动翻页会自动停止，快捷键显示阅读窗口后自动翻页恢复。
                 </Typography>
               </DialogContent>
             </Dialog>

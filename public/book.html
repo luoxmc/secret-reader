@@ -51,6 +51,7 @@
 
         window.bookServices.receiveMsg(function (res){
             if(res.type === 1 && res.data){
+                //推送设置
                 config = res.data;
                 $("#bookContent").css("background",config.bgColor).css("color",config.fontColor).css("font-size",config.fontSize + 'px');
                 $("#percent").css("color",config.fontColor).css("font-size",(config.fontSize-2) + 'px');
@@ -68,8 +69,18 @@
                     clearInterval(autoPageTimer);
                 }
             } else if(res.type === 2 && res.data){
+                //推送内容
                 $("#bookContent").html(res.data);
                 $("#percent input").val(res.progress).css("width", res.progress.toString().length * 0.45 + "rem");
+            } else if (res.type === 7 && res.data){
+                //推送窗口显示状态切换
+                if(config && config.autoPage && config.autoPage !== 0){
+                    if(res.data === 'hide'){
+                        clearInterval(autoPageTimer);
+                    } else if(res.data === 'show'){
+                        setPageInterval();
+                    }
+                }
             }
         });
 
