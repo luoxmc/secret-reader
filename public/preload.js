@@ -21,12 +21,13 @@ window.services = {
     if(encodingCheck.confidence > 0.45){
       str = iconv.decode(buffer , encodingCheck.encoding);
     }
-    str = str.replace(/\t/g, "").replace(/[，]\n/g, "，")
-        .replace(/[。]\n/g, "。").replace(/[？]\n/g, "？")
-        .replace(/[！]\n/g, "！").replace(/[,]\n/g, ",")
-        .replace(/[.]\n/g, ".").replace(/[?]\n/g, "?")
-        .replace(/[!]\n/g, "!").replace(/["]\n/g,'"')
-        .replace(/[”]\n/g,'”');
+    str = str.replace(/\t/g, "").replace(/[，]\s{2,}(?!第)/g, "，")
+        .replace(/[。]\s{2,}(?!第)/g, "。").replace(/[？]\s{2,}(?!第)/g, "？")
+        .replace(/[！]\s{2,}(?!第)/g, "！").replace(/[,]\s{2,}(?!第)/g, ",")
+        .replace(/[.]\s{2,}(?!第)/g, ".").replace(/[?]\s{2,}(?!第)/g, "?")
+        .replace(/[!]\s{2,}(?!第)/g, "!").replace(/["]\s{2,}(?!第)/g,'"')
+        .replace(/[”]\s{2,}(?!第)/g,'”').replace(/[……]\s{2,}(?!第)/g,'……')
+        .replace(/\n\n/g,"");
     return str;
   },
   sendMsg : (id,msg) => {

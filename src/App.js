@@ -1018,6 +1018,12 @@ export default class App extends React.Component {
                   <b style={{color:'#d25353'}}>如何设置老板键</b> <br/> 老板键用于快速关闭或隐藏阅读窗口，使用方法：在"utools-偏好设置-全局快捷键"栏目添加快捷键，关键字填入close-fish-book即可快速关闭，关键字填入toggle-show-fish-book即可快速显示/隐藏阅读窗口。
                 </Typography>
                 <Typography gutterBottom>
+                  <b style={{color:'#d25353'}}>章节跳转</b> <br/> 章节分割是按照"第*章、第*卷、第*回"等格式来切分的，兼容大部分网站下载的txt书籍。若提示"未检索到章节列表....."，请检查内容格式是否满足要求，不满足则无法使用章节跳转。可以使用搜索跳转来定位当前阅读进度。
+                </Typography>
+                <Typography gutterBottom>
+                  <b style={{color:'#d25353'}}>进度跳转</b> <br/> 打开阅读窗口后，右下角会显示当前阅读进度的百分比。点击该百分比数字后会出现输入框，可以手动输入百分比数字，按回车键后即可跳转。
+                </Typography>
+                <Typography gutterBottom>
                   <b style={{color:'#d25353'}}>设置-颜色</b> <br/> 只支持输入保存rgb和rgba色值，也可以使用取色工具取色。
                 </Typography>
                 <Typography gutterBottom>
@@ -1027,7 +1033,7 @@ export default class App extends React.Component {
                   <b style={{color:'#d25353'}}>设置-快捷键</b> <br/> 快捷键只能在阅读窗口激活（focus）的情况下有效，该插件快捷键优先级很低，请避免与系统中其他快捷键冲突。
                 </Typography>
                 <Typography gutterBottom>
-                  <b style={{color:'#d25353'}}>设置-自动翻页</b> <br/> 单位：秒，设置为0即为关闭自动翻页。快捷键隐藏阅读窗口后自动翻页会自动停止，快捷键显示阅读窗口后自动翻页恢复。
+                  <b style={{color:'#d25353'}}>设置-自动翻页</b> <br/> 单位：秒，设置为0即为关闭自动翻页。使用快捷键隐藏阅读窗口后自动翻页会自动停止，使用快捷键显示阅读窗口后自动翻页会自动恢复。
                 </Typography>
               </DialogContent>
             </Dialog>
