@@ -70,11 +70,16 @@ export default class App extends React.Component {
       bookId: null,
       show: false,
       keywords: '',
-      hasMore: false
+      hasMore: false,
+      noResultStr: '输入关键字后回车或者点击搜索图标开始搜索'
     },
     msg: {
       show: false,
       text: ''
+    },
+    deleteBook: {
+      show: false,
+      bookId: null
     },
     user: {
       _id : '',
@@ -120,7 +125,6 @@ export default class App extends React.Component {
   }
   /****  添加书籍  *****/
   addBook = (path) => {
-    console.log('add book');
     if(!window.services.checkFile(path)){
       this.showTip("该路径下文件已不存在或不可读");
       return;
@@ -159,10 +163,26 @@ export default class App extends React.Component {
     }
   }
   /****  删除书籍  *****/
-  removeBook = (e,id) => {
+  showDeleteConfirm = (e,id) => {
+    let self = this;
+    self.state.deleteBook.show = true;
+    self.state.deleteBook.bookId = id;
+    this.setState({deleteBook : JSON.parse(JSON.stringify(self.state.deleteBook))});
+  }
+  closeDeleteConfirm = (e) => {
+    let self = this;
+    self.state.deleteBook.show = false;
+    self.state.deleteBook.bookId = null;
+    this.setState({deleteBook : JSON.parse(JSON.stringify(self.state.deleteBook))});
+  }
+  removeBook = () => {
+    if(!this.state.deleteBook.bookId){
+      this.closeDeleteConfirm();
+      return;
+    }
     let self = this;
     this.state.list.data.forEach((dt, index) => {
-      if (dt && dt.id === id) {
+      if (dt && dt.id === self.state.deleteBook.bookId) {
         delete self.state.list.data[index];
         self.state.list.data = self.state.list.data.filter(function (val) {
           return val;
@@ -171,12 +191,12 @@ export default class App extends React.Component {
         if(res && res.ok) {
           this.setState({list:JSON.parse(JSON.stringify(window.utools.db.get(this.state.deviceId+"/list")))});
         }
+        self.closeDeleteConfirm();
       }
     })
   }
   /****  展示章节列表  *****/
   chaptersList = (e, id) => {
-    console.log('show chapters list')
     e.stopPropagation();
     this.closeRightMenu();
     let self = this;
@@ -188,14 +208,7 @@ export default class App extends React.Component {
             let chapters = self.getChapters(str);
             if(chapters && chapters.length > 0){
               self.state.chapter = { list : chapters, bookId: id, showChapterList : true};
-              self.setState({chapter: JSON.parse(JSON.stringify(self.state.chapter))},() => {
-                if(document.body.clientHeight && document.getElementById('chapterList') && document.getElementById('chapterList').clientHeight){
-                  const top = (document.body.clientHeight - document.getElementById('chapterList').clientHeight)/2 + 'px';
-                  const left = (document.body.clientWidth - document.getElementById('chapterList').clientWidth)/2 + 'px';
-                  document.getElementById('chapterList').style.top = top;
-                  document.getElementById('chapterList').style.left = left;
-                }
-              });
+              self.setState({chapter: JSON.parse(JSON.stringify(self.state.chapter))});
             } else {
               self.showTip('未检索到章节列表，请检查文本内容格式！');
             }
@@ -210,55 +223,34 @@ export default class App extends React.Component {
   }
   /****  关闭章节列表  ****/
   closeChapterMenu = (e) => {
-    console.log('close chapter list')
-    if(document.getElementById('chapterList')){
-      let self = this;
-      self.state.chapter.showChapterList = false;
-      self.state.chapter.list = [];
-      self.state.chapter.bookId = null;
-      this.setState({chapter : JSON.parse(JSON.stringify(self.state.chapter))});
-    }
+    let self = this;
+    self.state.chapter.showChapterList = false;
+    self.state.chapter.list = [];
+    self.state.chapter.bookId = null;
+    this.setState({chapter : JSON.parse(JSON.stringify(self.state.chapter))});
   }
   /****  打开搜索界面  ****/
   showSearch = (e,id) => {
-    console.log('show search list')
     e.stopPropagation();
     this.closeRightMenu();
     let self = this;
     self.state.search.show = true;
     self.state.search.bookId = id;
-    this.setState({search : JSON.parse(JSON.stringify(self.state.search))}, ()=>{
-      let index = 0;
-      let timerS = setInterval(function (){
-        index ++;
-        if(document.body.clientHeight && document.getElementById("searchMain") && document.getElementById("searchMain").clientHeight){
-          let height = document.getElementById("searchMain").clientHeight - document.getElementById("searchHeader").clientHeight - 20 - 15;
-          document.getElementById("searchList").style.height = height + 'px';
-          clearInterval(timerS);
-        }
-        if(index > 10){
-          clearInterval(timerS);
-        }
-      },50);
-
-    });
+    self.state.search.noResultStr = '输入关键字后回车或者点击搜索图标开始搜索';
+    this.setState({search : JSON.parse(JSON.stringify(self.state.search))});
   }
   /****  关闭搜索列表  ****/
   closeSearch = (e) => {
-    console.log('close search list')
-    if(document.getElementById('searchMain')){
-      let self = this;
-      self.state.search.show = false;
-      self.state.search.list = [];
-      self.state.search.bookId = null;
-      self.state.search.keywords = '';
-      self.state.search.hasMore = false;
-      this.setState({search : JSON.parse(JSON.stringify(self.state.search))});
-    }
+    let self = this;
+    self.state.search.show = false;
+    self.state.search.list = [];
+    self.state.search.bookId = null;
+    self.state.search.keywords = '';
+    self.state.search.hasMore = false;
+    this.setState({search : JSON.parse(JSON.stringify(self.state.search))});
   }
   /****  显示右键菜单  ****/
   showRightMenu = (e, bookId) => {
-    console.log('show right')
     let self = this;
     this.state.list.data.forEach(function(dt){
       if(dt && dt.id === bookId){
@@ -273,7 +265,6 @@ export default class App extends React.Component {
   }
   /****  关闭右键菜单  ****/
   closeRightMenu = (e) => {
-    console.log('close right')
     this.state.list.data.forEach(function(dt){
       dt.showRight = false;
     });
@@ -281,7 +272,6 @@ export default class App extends React.Component {
   }
   /****  章节跳转开始阅读  ****/
   chapterToBook = (e,keywords,index) => {
-    console.log('chapter to read book')
     e.stopPropagation();
     let self = this;
     if(this.state.chapter && this.state.chapter.list){
@@ -324,7 +314,6 @@ export default class App extends React.Component {
   /****  搜索关键字  ****/
   searchContent = (flag) => {
     //flag 是否为加载更多模式
-    console.log('search keywords')
     if(this.state.search && this.state.search.show && this.state.search.keywords){
       if(this.state.search.keywords.length < 2){
         this.showTip("关键字长度不能少于2位！")
@@ -360,15 +349,17 @@ export default class App extends React.Component {
             tmp.hasMore = false;
           }
           tmp.list.push(...res);
-          this.setState({search : JSON.parse(JSON.stringify(tmp))});
         }
+        if(!tmp.list || tmp.list.length <= 0){
+          tmp.noResultStr = '未搜索到结果'
+        }
+        this.setState({search : JSON.parse(JSON.stringify(tmp))});
         str = null;
       }
     }
   }
   /****  搜索跳转开始阅读  ****/
   searchToBook = (e,index) => {
-    console.log('search to read book')
     e.stopPropagation();
     let self = this;
     this.state.list.data.forEach(function(dt) {
@@ -426,7 +417,6 @@ export default class App extends React.Component {
   }
   /****  开始阅读  ****/
   readBook = (e,id,reload) => {
-    console.log('start read book')
     if(id === curId && ubWindow) {
       return;
     }
@@ -498,7 +488,6 @@ export default class App extends React.Component {
   }
   /****  关闭阅读器  ****/
   closeBook = () => {
-    console.log('close book');
     if(ubWindow){
       if (!ubWindow.isDestroyed()) {
         ubWindow.close();
@@ -511,7 +500,6 @@ export default class App extends React.Component {
   }
   /****  下一页  ****/
   nextPage = (reader) => {
-    console.log('next page');
     if(ubWindow && curId && curContent){
       let self = this;
       this.state.list.data.forEach(function(dt) {
@@ -540,7 +528,6 @@ export default class App extends React.Component {
   }
   /****  上一页  ****/
   prevPage = () => {
-    console.log('prev page');
     if(ubWindow && curId && curContent){
       let self = this;
       this.state.list.data.forEach(function(dt) {
@@ -568,14 +555,12 @@ export default class App extends React.Component {
   }
   /****  打开提示气泡  ****/
   showTip = (str) => {
-    console.log('show tip')
     let self = this;
     self.state.msg = {show : true, text: str};
     this.setState({msg: JSON.parse(JSON.stringify(self.state.msg))});
   }
   /****  关闭提示气泡  ****/
   hideTip = (e) => {
-    console.log('hide tip')
     let self = this;
     self.state.msg = {show : false, text: ''};
     this.setState({msg: JSON.parse(JSON.stringify(self.state.msg))});
@@ -626,7 +611,6 @@ export default class App extends React.Component {
   }
   /****   打开关闭等待层  ****/
   showLoading = (str,callback) => {
-    console.log('show loading')
     let tmp = this.state.loading;
     tmp.show = true;
     tmp.msg = str;
@@ -637,7 +621,6 @@ export default class App extends React.Component {
     });
   }
   closeLoading = () => {
-    console.log('close loading')
     let tmp = this.state.loading;
     tmp.show = false;
     tmp.msg = '';
@@ -649,16 +632,13 @@ export default class App extends React.Component {
     this.setState({showSetting : true});
   }
   closeSetting = (e) => {
-    console.log('close setting')
     this.setState({showSetting : false});
   }
   /****   打开关闭使用说明  ****/
   showHelp = (e) => {
-    console.log('show help')
     this.setState({showHelp : true});
   }
   closeHelp = (e) => {
-    console.log('close help')
     this.setState({showHelp : false});
   }
   /****   修改设置  ****/
@@ -993,7 +973,7 @@ export default class App extends React.Component {
                             <MenuList  >
                               <MenuItem onClick={(e)=>this.showSearch(e,value.id)}>搜索跳转</MenuItem>
                               <MenuItem onClick={(e)=>this.chaptersList(e,value.id)}>章节跳转</MenuItem>
-                              <MenuItem onClick={(e)=>this.removeBook(e,value.id)}>删除小说</MenuItem>
+                              <MenuItem onClick={(e)=>this.showDeleteConfirm(e,value.id)} style={{color:'#d25353'}}>删除小说</MenuItem>
                             </MenuList>
                           </ClickAwayListener>
                         </Paper>
@@ -1005,11 +985,19 @@ export default class App extends React.Component {
                 </Grid>
               </Grid>
             </Grid>
+            <Dialog aria-labelledby="customized-dialog-title" open={this.state.deleteBook.show} onClose={this.closeDeleteConfirm}>
+              <DialogContent dividers>
+                <Typography variant="overline" display="block"
+                style={{fontSize:'0.9rem',lineHeight:'2rem',maxWidth:'30rem'}}>确定将该书籍从书架移除么？该操作不会删除您的本地文件，但是会清空您的阅读进度，是否继续操作？</Typography>
+              </DialogContent>
+              <DialogActions>
+                <Button color="secondary" onClick={this.removeBook}>删除</Button>
+                <Button autoFocus color="primary" onClick={this.closeDeleteConfirm}>取消</Button>
+              </DialogActions>
+            </Dialog>
             <HelpTwoTone className='help-icon' onClick={this.showHelp}/>
             <Dialog onClose={this.closeHelp} aria-labelledby="customized-dialog-title" open={this.state.showHelp}>
-              <DialogTitle id="customized-dialog-title" style={{padding:'8px 20px'}}>
-                使用说明
-              </DialogTitle>
+              <DialogTitle id="customized-dialog-title" style={{padding:'8px 20px',textAlign:'center'}}>使用说明</DialogTitle>
               <DialogContent dividers>
                 <Typography gutterBottom>
                   <b style={{color:'#d25353'}}>格式支持</b>  <br/> 目前只支持txt格式文件，支持各种常见的编码格式，如utf-8、utf-16、gbk、gb2312、gb18030等。
@@ -1037,8 +1025,9 @@ export default class App extends React.Component {
                 </Typography>
               </DialogContent>
             </Dialog>
-            <Card hidden={!this.state.chapter.showChapterList} className='chapter-list' id='chapterList' variant="outlined">
-              <ClickAwayListener onClickAway={this.closeChapterMenu}>
+            <Dialog aria-labelledby="customized-dialog-title" open={this.state.chapter.showChapterList} onClose={this.closeChapterMenu} scroll='paper'>
+              <DialogTitle id="customized-dialog-title" style={{padding:'8px 20px',textAlign:'center'}}>章节列表</DialogTitle>
+              <DialogContent dividers>
                 <List component="nav" aria-label="secondary mailbox folders">
                   {this.state.chapter.list.map((value,index) => (
                       <ListItem button>
@@ -1046,40 +1035,37 @@ export default class App extends React.Component {
                       </ListItem>
                   ))}
                 </List>
-              </ClickAwayListener>
-            </Card>
-            <Card hidden={!this.state.search.show} className='search-main' id='searchMain' variant="outlined">
-              <ClickAwayListener onClickAway={this.closeSearch}>
-                <CardContent style={{padding:0}}>
-                  <Typography variant="overline" display="block" className='title' id='searchHeader'>
-                    <span className='label'>关键字:</span>
-                    <Input size="small" value={this.state.search.keywords} id='keywords' style={{width:'17rem',marginLeft: '1.5rem'}} inputProps={{ 'aria-label': 'description' }}
-                           onChange={(e) => this.inputChange2(e)}
-                           onKeyDown={(e) => this.inputChange4(e)}/>
-                    <Search className='search-icon' onClick={(e)=>this.searchContent(false)}/>
-                  </Typography>
-                  <Divider />
-                  <List component="nav" hidden={!this.state.search.list || this.state.search.list.length <= 0} aria-label="secondary mailbox folders" id='searchList' className='result'>
-                    {this.state.search.list.map((data) => (
-                        <ListItem button>
-                          <ListItemText onClick={(e) => this.searchToBook(e, data.index)} >
-                            <div dangerouslySetInnerHTML={{__html: data.content}}/>
-                          </ListItemText>
-                        </ListItem>
-                    ))}
-                    <div className='load-more' hidden={!this.state.search.hasMore}>
-                      <Button variant="contained" onClick={(e)=>this.searchContent(true)}>加载更多</Button>
-                    </div>
-                  </List>
-                  <div hidden={this.state.search.list && this.state.search.list.length > 0} className='no-result'>暂无匹配结果</div>
-                </CardContent>
-              </ClickAwayListener>
-            </Card>
-            <Snackbar
-                anchorOrigin={{vertical: 'top',horizontal: 'center',}} open={this.state.msg.show}
-                autoHideDuration={2000} onClose={this.hideTip} message={this.state.msg.text}/>
+              </DialogContent>
+            </Dialog>
+            <Dialog aria-labelledby="customized-dialog-title" className='search-main' open={this.state.search.show} onClose={this.closeSearch} scroll='paper'>
+              <DialogTitle id="customized-dialog-title" style={{padding:'8px 20px',textAlign:'center'}}>
+                <Typography variant="overline" display="block" className='title' id='searchHeader'>
+                  <span className='label'>关键字:</span>
+                  <Input size="small" value={this.state.search.keywords} id='keywords' style={{width:'17rem',marginLeft: '1.5rem'}} inputProps={{ 'aria-label': 'description' }}
+                         onChange={(e) => this.inputChange2(e)}
+                         onKeyDown={(e) => this.inputChange4(e)}/>
+                  <Search className='search-icon' onClick={(e)=>this.searchContent(false)}/>
+                </Typography>
+              </DialogTitle>
+              <DialogContent dividers>
+                <List component="nav" hidden={!this.state.search.list || this.state.search.list.length <= 0} aria-label="secondary mailbox folders" id='searchList' className='result'>
+                  {this.state.search.list.map((data) => (
+                      <ListItem button>
+                        <ListItemText onClick={(e) => this.searchToBook(e, data.index)} >
+                          <div dangerouslySetInnerHTML={{__html: data.content}}/>
+                        </ListItemText>
+                      </ListItem>
+                  ))}
+                  <div className='load-more' hidden={!this.state.search.hasMore}>
+                    <Button variant="contained" onClick={(e)=>this.searchContent(true)}>加载更多</Button>
+                  </div>
+                </List>
+                <div hidden={this.state.search.list && this.state.search.list.length > 0} className='no-result'>{this.state.search.noResultStr}</div>
+              </DialogContent>
+            </Dialog>
+            <Snackbar anchorOrigin={{vertical: 'top',horizontal: 'center',}} open={this.state.msg.show} autoHideDuration={2000} onClose={this.hideTip} message={this.state.msg.text}/>
             <Dialog aria-labelledby="customized-dialog-title" open={this.state.showSetting} onClose={this.closeSetting}>
-              <DialogTitle id="customized-dialog-title" >阅读器设置</DialogTitle>
+              <DialogTitle id="customized-dialog-title" style={{padding:'8px 20px',textAlign:'center'}}>阅读器设置</DialogTitle>
               <DialogContent dividers>
                 <Grid container spacing={3}>
                   <Grid item xs={12} sm={6}>
