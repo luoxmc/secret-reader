@@ -97,7 +97,8 @@ export default class App extends React.Component {
         prev: window.platform.isMacOs ? 'Command+ArrowLeft' : 'Control+[',
         next: window.platform.isMacOs ? 'Command+ArrowRight' : 'Control+]',
         isMove: true,
-        mouseType: 0
+        mouseType: 0,
+        spacing: 0
       },
       _rev : ''
     },
@@ -628,7 +629,6 @@ export default class App extends React.Component {
   }
   /****   打开关闭设置  ****/
   openSetting = (e) => {
-    console.log('show setting')
     this.setState({showSetting : true});
   }
   closeSetting = (e) => {
@@ -670,7 +670,11 @@ export default class App extends React.Component {
       this.showTip('上一页与下一页不能使用相同的快捷键！');
       return;
     }
-    if(config.autoPage < 0 || config.autoPage > 100){
+    if(config.data.spacing < -2 || config.data.spacing > 15){
+      this.showTip('字体间距的范围为-2到15');
+      return;
+    }
+    if(config.data.autoPage < 0 || config.data.autoPage > 100){
       this.showTip('自动翻页时间范围为0秒-100秒');
       return;
     }
@@ -734,7 +738,18 @@ export default class App extends React.Component {
   /****  输入框修改  ****/
   inputChange = (e) => {
     let config = this.state.user;
-    let val = e.target.value.toString().replace('-','').replace('+','').replace('e','')
+    let val = e.target.value.toString().replace('-','').replace('+','').replace('e','');
+    config.data[e.target.getAttribute('id')] = Number(val);
+    this.setState({user : JSON.parse(JSON.stringify(config))});
+  }
+  inputChangeSpec = (e) => {
+    let config = this.state.user;
+    let val = e.target.value.toString().replace('+','').replace('e','');
+    if(val > 15){
+      val = 15;
+    } else if (val < -2){
+      val = -2;
+    }
     config.data[e.target.getAttribute('id')] = Number(val);
     this.setState({user : JSON.parse(JSON.stringify(config))});
   }
@@ -1130,6 +1145,13 @@ export default class App extends React.Component {
                       <Input value={this.state.user.data.next} readOnly size="small" id='next' inputProps={{ 'aria-label': 'description' }}
                              onFocus={(e) => this.inputChange3(e)}
                              onBlur={(e) => this.inputBlur(e)} />
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="overline" display="block" >
+                      <span className='setting-label'>字体间距</span>
+                      <Input value={this.state.user.data.spacing} size="small" id='spacing' inputProps={{ 'aria-label': 'description' }} placeholder='范围：-2到15' type='number'
+                             onChange={(e) => this.inputChangeSpec(e)}/>
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>

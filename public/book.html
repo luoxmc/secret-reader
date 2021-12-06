@@ -53,7 +53,7 @@
             if(res.type === 1 && res.data){
                 //推送设置
                 config = res.data;
-                $("#bookContent").css("background",config.bgColor).css("color",config.fontColor).css("font-size",config.fontSize + 'px');
+                $("#bookContent").css("background",config.bgColor).css("color",config.fontColor).css("font-size",config.fontSize + 'px').css("letter-spacing",config.spacing + "px");
                 $("#percent").css("color",config.fontColor).css("font-size",(config.fontSize-2) + 'px');
                 $("#bookContent").css("-webkit-app-region",config.isMove ? "drag" : "no-drag");
                 $("#percent input").css("color",config.fontColor)
