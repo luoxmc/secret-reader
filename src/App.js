@@ -98,7 +98,9 @@ export default class App extends React.Component {
         next: window.platform.isMacOs ? 'Command+ArrowRight' : 'Control+]',
         isMove: true,
         mouseType: 0,
-        spacing: 0
+        spacing: 0,
+        spacingY: 1.2,
+        wheelType: 0
       },
       _rev : ''
     },
@@ -464,13 +466,13 @@ export default class App extends React.Component {
           backgroundColor : '#00000000',
           hasShadow : false,
           webPreferences : {
-            // devTools: true,
+            devTools: true,
             preload: 'bookPreload.js'
           }
         }, () => {
           document.getElementById('closeBtn').style.color = '#000000DD';
           //初始化阅读器
-          // ubWindow.webContents.openDevTools();
+          ubWindow.webContents.openDevTools();
           const msg = {
             type: 1,
             data: self.state.user.data
@@ -658,8 +660,8 @@ export default class App extends React.Component {
     }
     config.data.numOfPage = Number(config.data.numOfPage);
     config.data.autoPage = Number(config.data.autoPage) || 0;
-    if(config.data.fontSize < 5 || config.data.fontSize > 22){
-      this.showTip('字体大小范围为5-22');
+    if(config.data.fontSize < 10 || config.data.fontSize > 28){
+      this.showTip('字体大小范围为10-28');
       return;
     }
     if(config.data.prev.endsWith('+') || config.data.next.endsWith('+')){
@@ -674,8 +676,8 @@ export default class App extends React.Component {
       this.showTip('字体间距的范围为-2到15');
       return;
     }
-    if(config.data.autoPage < 0 || config.data.autoPage > 100){
-      this.showTip('自动翻页时间范围为0秒-100秒');
+    if(config.data.autoPage < 0 || config.data.autoPage > 200){
+      this.showTip('自动翻页时间范围为0秒-200秒');
       return;
     }
     if(!config._rev){
@@ -736,19 +738,13 @@ export default class App extends React.Component {
     this.closeSetting();
   }
   /****  输入框修改  ****/
-  inputChange = (e) => {
-    let config = this.state.user;
-    let val = e.target.value.toString().replace('-','').replace('+','').replace('e','');
-    config.data[e.target.getAttribute('id')] = Number(val);
-    this.setState({user : JSON.parse(JSON.stringify(config))});
-  }
-  inputChangeSpec = (e) => {
+  inputChange = (e,min,max) => {
     let config = this.state.user;
     let val = e.target.value.toString().replace('+','').replace('e','');
-    if(val > 15){
-      val = 15;
-    } else if (val < -2){
-      val = -2;
+    if(max !== null && val > max){
+      val = max;
+    } else if (min !== null && val < min){
+      val = min;
     }
     config.data[e.target.getAttribute('id')] = Number(val);
     this.setState({user : JSON.parse(JSON.stringify(config))});
@@ -781,6 +777,16 @@ export default class App extends React.Component {
   inputChange7 = (e) => {
     let config = this.state.user;
     config.data.mouseType =  e.target.value;
+    this.setState({user : JSON.parse(JSON.stringify(config))});
+  }
+  inputChange8 = (e) => {
+    let config = this.state.user;
+    config.data.spacingY =  e.target.value;
+    this.setState({user : JSON.parse(JSON.stringify(config))});
+  }
+  inputChange9 = (e) => {
+    let config = this.state.user;
+    config.data.wheelType =  e.target.value;
     this.setState({user : JSON.parse(JSON.stringify(config))});
   }
   inputBlur = (e) => {
@@ -1030,10 +1036,13 @@ export default class App extends React.Component {
                   <b style={{color:'#d25353'}}>设置-颜色</b> <br/> 只支持输入保存rgb和rgba色值，也可以使用取色工具取色。
                 </Typography>
                 <Typography gutterBottom>
-                  <b style={{color:'#d25353'}}>设置-窗口移动</b> <br/> 此设置可以切换窗口移动模式和固定模式。ps：windows机器下开启窗口移动会导致鼠标翻页失效。
+                  <b style={{color:'#d25353'}}>设置-窗口移动</b> <br/> 此设置可以切换窗口移动模式和固定模式。ps：windows机器下开启窗口移动会导致鼠标翻页和滚轮翻页失效。ps2：移动模式下每5秒钟记录一次窗口位置，所以需要记忆窗口位置的话，请在窗口移动到所需位置后停留五秒钟再关闭窗口或者切换为固定模式。
                 </Typography>
                 <Typography gutterBottom>
                   <b style={{color:'#d25353'}}>设置-快捷键</b> <br/> 快捷键只能在阅读窗口激活（focus）的情况下有效，该插件快捷键优先级很低，请避免与系统中其他快捷键冲突。
+                </Typography>
+                <Typography gutterBottom>
+                  <b style={{color:'#d25353'}}>设置-鼠标翻页、滚轮翻页</b> <br/> windows机器下，鼠标翻页和滚轮翻页基本上只能在固定窗口模式使用，linux未测试。 滚轮翻页只有鼠标光标在阅读窗口范围之内才能生效。
                 </Typography>
                 <Typography gutterBottom>
                   <b style={{color:'#d25353'}}>设置-自动翻页</b> <br/> 单位：秒，设置为0即为关闭自动翻页。使用快捷键隐藏阅读窗口后自动翻页会自动停止，使用快捷键显示阅读窗口后自动翻页会自动恢复。
@@ -1121,14 +1130,34 @@ export default class App extends React.Component {
                     <Typography variant="overline" display="block" >
                       <span className='setting-label'>字体大小</span>
                       <Input value={this.state.user.data.fontSize} size="small" id='fontSize' inputProps={{ 'aria-label': 'description' }}
-                             type='number' onChange={(e) => this.inputChange(e)}/>
+                             type='number' onChange={(e) => this.inputChange(e,10,28)}/>
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="overline" display="block" >
                       <span className='setting-label'>每页字数</span>
                       <Input value={this.state.user.data.numOfPage} size="small" id='numOfPage' inputProps={{ 'aria-label': 'description' }}
-                             type='number' onChange={(e) => this.inputChange(e)}/>
+                             type='number' onChange={(e) => this.inputChange(e,0,10000)}/>
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="overline" display="block" >
+                      <span className='setting-label'>文字间距</span>
+                      <Input value={this.state.user.data.spacing} size="small" id='spacing' inputProps={{ 'aria-label': 'description' }} placeholder='范围：-2到15' type='number'
+                             onChange={(e) => this.inputChange(e,-2,15)}/>
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="overline" display="block" >
+                      <span className='setting-label'>行间距</span>
+                      <Select value={this.state.user.data.spacingY} onChange={this.inputChange8} style={{maxWidth:'10rem',fontSize:'0.9rem'}}>
+                        <MenuItem value={0.8}>0.8倍行间距</MenuItem>
+                        <MenuItem value={1.0}>1倍行间距</MenuItem>
+                        <MenuItem value={1.2}>1.2倍行间距</MenuItem>
+                        <MenuItem value={1.4}>1.4倍行间距</MenuItem>
+                        <MenuItem value={1.6}>1.6倍行间距</MenuItem>
+                        <MenuItem value={1.8}>1.8倍行间距</MenuItem>
+                      </Select>
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1149,13 +1178,6 @@ export default class App extends React.Component {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="overline" display="block" >
-                      <span className='setting-label'>字体间距</span>
-                      <Input value={this.state.user.data.spacing} size="small" id='spacing' inputProps={{ 'aria-label': 'description' }} placeholder='范围：-2到15' type='number'
-                             onChange={(e) => this.inputChangeSpec(e)}/>
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="overline" display="block" >
                       <span className='setting-label'>鼠标翻页</span>
                       <Select value={this.state.user.data.mouseType} onChange={this.inputChange7} style={{maxWidth:'11.5rem',fontSize:'0.9rem'}}>
                         <MenuItem value={0}>无需鼠标翻页</MenuItem>
@@ -1166,10 +1188,20 @@ export default class App extends React.Component {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="overline" display="block" >
+                      <span className='setting-label'>滚轮翻页</span>
+                      <Select value={this.state.user.data.wheelType} onChange={this.inputChange9} style={{maxWidth:'11.5rem',fontSize:'0.9rem'}}>
+                        <MenuItem value={0}>无需滚轮翻页</MenuItem>
+                        <MenuItem value={1}>上一页:向上;下一页:向下;</MenuItem>
+                        <MenuItem value={2}>上一页:向下;下一页:向上;</MenuItem>
+                      </Select>
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="overline" display="block" >
                       <span className='setting-label'>自动翻页</span>
                       <Input value={this.state.user.data.autoPage} size="small" id='autoPage' inputProps={{ 'aria-label': 'description' }}
                              placeholder='单位:秒,0为不自动翻页' type='number'
-                             onChange={(e) => this.inputChange(e)}/>
+                             onChange={(e) => this.inputChange(e,0,200)}/>
                     </Typography>
                   </Grid>
                 </Grid>

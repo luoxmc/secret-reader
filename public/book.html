@@ -48,30 +48,64 @@
         let config = null;
         let tmpProgress = null;
         let autoPageTimer = null;
+        let pointX = null;
+        let pointY = null;
 
         window.bookServices.receiveMsg(function (res){
             if(res.type === 1 && res.data){
                 //推送设置
                 config = res.data;
-                $("#bookContent").css("background",config.bgColor).css("color",config.fontColor).css("font-size",config.fontSize + 'px').css("letter-spacing",config.spacing + "px");
+                $("#bookContent").css("background",config.bgColor).css("color",config.fontColor)
+                    .css("font-size",config.fontSize + 'px').css("letter-spacing",config.spacing + "px");
+                if(config.spacingY){
+                    $("#bookContent").css("line-height", Math.ceil(config.spacingY * config.fontSize) + "px");
+                }
                 $("#percent").css("color",config.fontColor).css("font-size",(config.fontSize-2) + 'px');
+                $("#percent input").css("font-size",(config.fontSize-2) + 'px');
                 $("#bookContent").css("-webkit-app-region",config.isMove ? "drag" : "no-drag");
                 $("#percent input").css("color",config.fontColor)
                 document.removeEventListener('keydown',keyListen);
                 document.addEventListener('keydown', keyListen);
-                document.removeEventListener("mousedown",mousePage);
+                document.removeEventListener("mousedown",mouseDown);
+                document.removeEventListener("mouseup",mousePage);
+                document.removeEventListener("wheel",wheelPage);
                 if(config.mouseType !== 0){
-                    document.addEventListener("mousedown",mousePage);
+                    document.addEventListener("mousedown",mouseDown);
+                    document.addEventListener("mouseup",mousePage);
+                }
+                if(config.wheelType !== 0){
+                    document.addEventListener("wheel",wheelPage);
                 }
                 if(config && config.autoPage && config.autoPage !== 0){
                     setPageInterval();
                 } else {
                     clearInterval(autoPageTimer);
                 }
+                if(config.isMove){
+                    setInterval(function (){
+                        const nowLeft = window.screenLeft;
+                        const nowTop = window.screenTop;
+                        if(nowLeft !== windowLeft || nowTop !== windowTop){
+                            windowLeft = window.screenLeft;
+                            windowTop = window.screenTop;
+                            sendWindowData();
+                        }
+                    },5000);
+                }
             } else if(res.type === 2 && res.data){
                 //推送内容
                 $("#bookContent").html(res.data);
-                $("#percent input").val(res.progress).css("width", res.progress.toString().length * 0.45 + "rem");
+                let widthPerNum ;
+                if(config.fontSize < 15){
+                    widthPerNum = config.fontSize * 0.031;
+                } else if (config.fontSize >= 16 && config.fontSize < 18){
+                    widthPerNum = config.fontSize * 0.032;
+                } else if (config.fontSize >= 18 && config.fontSize < 25){
+                    widthPerNum = config.fontSize * 0.033;
+                } else {
+                    widthPerNum = config.fontSize * 0.034;
+                }
+                $("#percent input").val(res.progress).css("width", res.progress.toString().length * widthPerNum + "rem");
             } else if (res.type === 7 && res.data){
                 //推送窗口显示状态切换
                 if(config && config.autoPage && config.autoPage !== 0){
@@ -94,16 +128,6 @@
             }
             window.bookServices.sendMsg(msg);
         };
-
-        setInterval(function (){
-            const nowLeft = window.screenLeft;
-            const nowTop = window.screenTop;
-            if(nowLeft !== windowLeft || nowTop !== windowTop){
-                windowLeft = window.screenLeft;
-                windowTop = window.screenTop;
-                sendWindowData();
-            }
-        },5000);
 
         $("#percent input").keydown(function (e){
             if(e.key === '+' || e.key === '-' || e.key === 'e'){
@@ -131,7 +155,7 @@
             $("#percent").css("font-size",(config.fontSize + 2) + 'px');
         })
 
-        $("#percent input").blur(function () {
+        $("#percent input").blur(function (e) {
             if(tmpProgress){
                 $("#percent input").val(tmpProgress);
             }
@@ -217,7 +241,29 @@
             }
         }
 
+        function mouseDown (e){
+            if(config && config.isMove){
+                pointX = window.screenLeft;
+                pointY = window.screenTop;
+            }
+        }
         function mousePage (e){
+            if(e.button === 0 && pointX !== null && pointY !== null){
+                //鼠标左键，检测是点击还是移动窗口
+                let xDiff = Math.abs(window.screenLeft - pointX);
+                let yDiff = Math.abs(window.screenTop - pointY);
+                if(xDiff >= 2 || yDiff >= 2){
+                    //窗口移动比较明显，不翻页
+                    return;
+                }
+            }
+            if(e.path && e.path.length > 0){
+                for (let i = 0; i < e.path.length; i++) {
+                    if(e.path[i] && e.path[i].id === 'percent'){
+                        return;
+                    }
+                }
+            }
             let prevKey = null;
             let nextKey = null;
             if(config.mouseType === 1){
@@ -239,6 +285,30 @@
             window.bookServices.sendMsg(msg);
             if(config && config.autoPage && config.autoPage !== 0){
                 setPageInterval();
+            }
+        }
+        let wheelFlag = true;
+        function wheelPage (e){
+            if(wheelFlag){
+                wheelFlag = false;
+                let command = "";
+                if( (config.wheelType === 1 && e.deltaY > 0) || (config.wheelType === 2 && e.deltaY < 0) ){
+                    //自然方向+滚轮向下 || 非自然方向+滚轮向上
+                    command = "next";
+                } else {
+                    command = "prev";
+                }
+                let msg = {
+                    type: 4,
+                    data: command
+                }
+                window.bookServices.sendMsg(msg);
+                if(config && config.autoPage && config.autoPage !== 0){
+                    setPageInterval();
+                }
+                setTimeout(function () {
+                    wheelFlag = true;
+                },400);
             }
         }
 
