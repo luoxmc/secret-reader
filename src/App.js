@@ -60,6 +60,7 @@ export default class App extends React.Component {
       data : [],
       _rev : ''
     },
+    covers: {},
     chapter: {
       list: [],
       bookId: null,
@@ -115,15 +116,13 @@ export default class App extends React.Component {
   /****  选择文件  ****/
   checkFile = () => {
     let file = window.utools.showOpenDialog({
-      filters: [{ 'name': 'Txt', extensions: ['txt'] }],
+      filters: [{ 'name': 'Txt', extensions: ['txt','epub'] }],
       properties: ['openFile']
     })
     if(file && file.length > 0){
       this.addBook(file[0]);
-    } else if (file === undefined){
-      console.log("user cancel");
     } else {
-      this.showTip("请选择有效的txt文件");
+      console.log("user cancel");
     }
   }
   /****  添加书籍  *****/
@@ -132,13 +131,12 @@ export default class App extends React.Component {
       this.showTip("该路径下文件已不存在或不可读");
       return;
     }
-    const bookId = new Date().getTime().toString();
     let tmpList = this.state.list;
     let name = '';
     if(window.platform.isWindows){
-      name = path.replace('.txt','').substring(path.lastIndexOf("\u005C") + 1);
+      name = path.replace('.txt','').replace('.epub','').substring(path.lastIndexOf("\u005C") + 1);
     } else {
-      name = path.replace('.txt','').substring(path.lastIndexOf("/") + 1);
+      name = path.replace('.txt','').replace('.epub','').substring(path.lastIndexOf("/") + 1);
     }
     if(name.length > 20){
       name = name.substring(0,20) + "...";
@@ -153,17 +151,67 @@ export default class App extends React.Component {
       this.showTip("书架中已有该书籍！");
       return;
     }
+    const bookId = new Date().getTime().toString();
+    if(path.endsWith('.epub')){
+      this.showLoading();
+      let self = this;
+      window.services.getEpubInfo(path,(res) => {
+        if(res.error_no === 0){
+          if(!res.content || res.content.length <= 0){
+            self.showTip("未获取到epub书籍内容！");
+            return;
+          }
+          //封面以及书籍内容存入db
+          let coverId = "";
+          if(res.cover){
+            coverId = window.utools.getNativeId()+"/"+ bookId + "/cover";
+            window.utools.db.postAttachment( coverId ,res.cover, 'image/png');
+          }
+          let bookPath = "";
+          for (let i = 0; i < res.content.length; i++){
+            let one = window.utools.getNativeId()+"/"+ bookId + "/content" + i;
+            bookPath = bookPath + one + ','
+            window.utools.db.postAttachment( one ,res.content[i], 'text/plain');
+          }
+          bookPath = bookPath.substring(0, bookPath.length - 1);
+          self.addToDb('epub',bookId,name,bookPath,coverId);
+        } else {
+          self.showTip("读取epub书籍失败！");
+        }
+        self.closeLoading();
+      });
+    } else {
+      this.addToDb('txt',bookId,name,path,'');
+    }
+  }
+  addToDb = (type,bookId,name,path,coverId) => {
+    let tmpList = this.state.list;
     tmpList.data.push({
       id : bookId,
+      type : type,
       name : name,
       path : path,
+      cover : coverId,
       showRight: false,
       progress : 0
     })
     let res1 = window.utools.db.put(tmpList);
     if(res1 && res1.ok) {
       this.setState({list:JSON.parse(JSON.stringify(window.utools.db.get(this.state.deviceId+"/list")))});
+      const buf = window.utools.db.getAttachment(coverId);
+      if(buf){
+        let covers = this.state.covers;
+        covers[bookId] = this.unit8ToCssBase64Png(buf);
+        this.setState({covers:JSON.parse(JSON.stringify(covers))});
+      }
     }
+  }
+  unit8ToCssBase64Png = (array) => {
+    let binary = '';
+    for (let len = array.byteLength, i = 0; i < len; i++) {
+      binary += String.fromCharCode(array[i]);
+    }
+    return 'data:image/png;base64,' + window.btoa(binary).replace(/=/g, '');
   }
   /****  删除书籍  *****/
   showDeleteConfirm = (e,id) => {
@@ -186,6 +234,18 @@ export default class App extends React.Component {
     let self = this;
     this.state.list.data.forEach((dt, index) => {
       if (dt && dt.id === self.state.deleteBook.bookId) {
+        if ( dt.type && dt.type === 'epub' ){
+          //epub书籍删除时先删除存utools数据库的内容和封面
+          let paths = dt.path.split(',');
+          if(paths && paths.length > 0){
+            for (let i = 0; i < paths.length; i++) {
+              window.utools.db.remove(paths[i]);
+            }
+          }
+          if(dt.cover){
+            window.utools.db.remove(dt.cover);
+          }
+        }
         delete self.state.list.data[index];
         self.state.list.data = self.state.list.data.filter(function (val) {
           return val;
@@ -206,22 +266,23 @@ export default class App extends React.Component {
     this.showLoading('', function () {
       self.state.list.data.forEach(function(dt){
         if(dt && dt.id === id){
-          let str = window.services.readBook(dt.path)
-          if(str){
-            let chapters = self.getChapters(str);
-            if(chapters && chapters.length > 0){
-              self.state.chapter = { list : chapters, bookId: id, showChapterList : true};
-              self.setState({chapter: JSON.parse(JSON.stringify(self.state.chapter))});
+          window.services.readBook(dt, (str) => {
+            if(str){
+              let chapters = self.getChapters(str);
+              if(chapters && chapters.length > 0){
+                self.state.chapter = { list : chapters, bookId: id, showChapterList : true};
+                self.setState({chapter: JSON.parse(JSON.stringify(self.state.chapter))});
+              } else {
+                self.showTip('未检索到章节列表，请检查文本内容格式！');
+              }
+              str = null;
             } else {
-              self.showTip('未检索到章节列表，请检查文本内容格式！');
+              self.showTip('获取文件内容失败，请检查!');
             }
-            str = null;
-          } else {
-            self.showTip('获取文件内容失败，请检查!');
-          }
+            self.closeLoading();
+          })
         }
       })
-      self.closeLoading();
     })
   }
   /****  关闭章节列表  ****/
@@ -280,17 +341,17 @@ export default class App extends React.Component {
     if(this.state.chapter && this.state.chapter.list){
       this.state.list.data.forEach(function(dt) {
         if (dt && dt.id === self.state.chapter.bookId) {
-          let str = window.services.readBook(dt.path)
-          if (str) {
-            let count = 0;
-            self.state.chapter.list.forEach(function (vlu,idx){
-              if(vlu === keywords){
+          window.services.readBook(dt, (str) => {
+            if (str) {
+              let count = 0;
+              self.state.chapter.list.forEach(function (vlu,idx){
+                if(vlu === keywords){
                   count ++;
-              }
-              if(idx === index){
-                keywords = keywords.replace(/\n/g , '');
-                let x = self.findStr(str,keywords,count);
-                if(x && x > 0){
+                }
+                if(idx === index){
+                  keywords = keywords.replace(/\n/g , '');
+                  let x = self.findStr(str,keywords,count);
+                  if(x && x > 0){
                     dt.progress = Number(x);
                     let res = window.utools.db.put(self.state.list);
                     if(res && res.ok) {
@@ -302,14 +363,15 @@ export default class App extends React.Component {
                         },150);
                       });
                     }
-                } else {
-                  self.showTip("跳转失败");
+                  } else {
+                    self.showTip("跳转失败");
+                  }
+                  self.closeChapterMenu();
                 }
-                self.closeChapterMenu();
-              }
-            })
-            str = null;
-          }
+              })
+              str = null;
+            }
+          })
         }
       });
     }
@@ -323,42 +385,42 @@ export default class App extends React.Component {
         return;
       }
       let self = this;
-      let str = '';
       this.state.list.data.forEach(function(dt) {
         if (dt && dt.id === self.state.search.bookId) {
-          str = window.services.readBook(dt.path)
+          window.services.readBook(dt, (str) => {
+            if (str) {
+              let index = 0;
+              let tmp = self.state.search;
+              if(!flag){
+                tmp.list = [];
+              }
+              if(tmp.list && tmp.list.length > 0){
+                let last = tmp.list[tmp.list.length - 1];
+                if(last && last.index){
+                  index = last.index;
+                }
+              }
+              let res = self.findStrList(str, tmp.keywords, 11, index);
+              if(res && res.length > 0){
+                if(res.length === 11){
+                  res = res.filter(function(v, i, ar) {
+                    return i !== ar.length - 1
+                  })
+                  tmp.hasMore = true;
+                } else {
+                  tmp.hasMore = false;
+                }
+                tmp.list.push(...res);
+              }
+              if(!tmp.list || tmp.list.length <= 0){
+                tmp.noResultStr = '未搜索到结果'
+              }
+              self.setState({search : JSON.parse(JSON.stringify(tmp))});
+              str = null;
+            }
+          })
         }
       });
-      if (str) {
-        let index = 0;
-        let tmp = this.state.search;
-        if(!flag){
-          tmp.list = [];
-        }
-        if(tmp.list && tmp.list.length > 0){
-          let last = tmp.list[tmp.list.length - 1];
-          if(last && last.index){
-            index = last.index;
-          }
-        }
-        let res = this.findStrList(str, tmp.keywords, 11, index);
-        if(res && res.length > 0){
-          if(res.length === 11){
-            res = res.filter(function(v, i, ar) {
-              return i !== ar.length - 1
-            })
-            tmp.hasMore = true;
-          } else {
-            tmp.hasMore = false;
-          }
-          tmp.list.push(...res);
-        }
-        if(!tmp.list || tmp.list.length <= 0){
-          tmp.noResultStr = '未搜索到结果'
-        }
-        this.setState({search : JSON.parse(JSON.stringify(tmp))});
-        str = null;
-      }
     }
   }
   /****  搜索跳转开始阅读  ****/
@@ -429,64 +491,61 @@ export default class App extends React.Component {
         let flag = true;
         self.state.list.data.forEach(function(dt) {
           if (dt && dt.id === id) {
-            if(!window.services.checkFile(dt.path)){
+            if(dt.type !== 'epub' && !window.services.checkFile(dt.path)){
+              self.closeLoading();
               self.showTip("该路径下文件已不存在或不可读");
               flag = false;
             } else {
-              let str = window.services.readBook(dt.path)
-              if (str) {
-                curContent = str;
-                str = null;
-              } else {
-                self.showTip("解析文件失败，文件编码不支持");
-                flag = false;
-              }
+              window.services.readBook(dt, (str) => {
+                if (str) {
+                  curContent = str;
+                  str = null;
+                  if(id !== curId) {
+                    curId = id;
+                  }
+                  if(!ubWindow){
+                    ubWindow = window.utools.createBrowserWindow('book.html', {
+                      useContentSize : true,
+                      skipTaskbar : true,
+                      width : self.state.user.data.winWidth ,
+                      height : self.state.user.data.winHeight,
+                      x: self.state.user.data.x,
+                      y: self.state.user.data.y,
+                      alwaysOnTop : true,
+                      frame : false,
+                      transparent : true,
+                      backgroundColor : '#00000000',
+                      hasShadow : false,
+                      webPreferences : {
+                        devTools: true,
+                        preload: 'bookPreload.js'
+                      }
+                    }, () => {
+                      document.getElementById('closeBtn').style.color = '#000000DD';
+                      //初始化阅读器
+                      ubWindow.webContents.openDevTools();
+                      const msg = {
+                        type: 1,
+                        data: self.state.user.data
+                      }
+                      window.services.sendMsg(ubWindow.webContents.id, msg);
+                      self.nextPage(true);
+                    })
+                  } else {
+                    if(!ubWindow.isVisible()){
+                      ubWindow.show();
+                    }
+                    self.nextPage(true);
+                  }
+                } else {
+                  self.showTip("解析文件失败，文件编码不支持");
+                }
+                self.closeLoading();
+              })
             }
           }
         });
-        if(!flag){
-          self.closeLoading();
-          return;
-        }
-        if(id !== curId) {
-          curId = id;
-        }
       }
-      if(!ubWindow){
-        ubWindow = window.utools.createBrowserWindow('book.html', {
-          useContentSize : true,
-          skipTaskbar : true,
-          width : self.state.user.data.winWidth ,
-          height : self.state.user.data.winHeight,
-          x: self.state.user.data.x,
-          y: self.state.user.data.y,
-          alwaysOnTop : true,
-          frame : false,
-          transparent : true,
-          backgroundColor : '#00000000',
-          hasShadow : false,
-          webPreferences : {
-            devTools: true,
-            preload: 'bookPreload.js'
-          }
-        }, () => {
-          document.getElementById('closeBtn').style.color = '#000000DD';
-          //初始化阅读器
-          ubWindow.webContents.openDevTools();
-          const msg = {
-            type: 1,
-            data: self.state.user.data
-          }
-          window.services.sendMsg(ubWindow.webContents.id, msg);
-          self.nextPage(true);
-        })
-      } else {
-        if(!ubWindow.isVisible()){
-          ubWindow.show();
-        }
-        self.nextPage(true);
-      }
-      self.closeLoading();
     });
   }
   /****  关闭阅读器  ****/
@@ -619,7 +678,9 @@ export default class App extends React.Component {
     tmp.msg = str;
     this.setState({loading : JSON.parse(JSON.stringify(tmp))},() => {
       setTimeout(function () {
-        callback();
+        if(callback){
+          callback();
+        }
       },180)
     });
   }
@@ -862,6 +923,19 @@ export default class App extends React.Component {
         let state = this.state;
         state.deviceId = window.utools.getNativeId();
         state.list = list;
+        let covers = {};
+        if(list.data.length > 0){
+          let self = this;
+          list.data.forEach(function (oneBook){
+            if(oneBook.type && oneBook.type === 'epub' && oneBook.cover){
+              const buf = window.utools.db.getAttachment(oneBook.cover);
+              if(buf){
+                covers[oneBook.id] = self.unit8ToCssBase64Png(buf);
+              }
+            }
+          })
+        }
+        state.covers = covers;
         this.setState(JSON.parse(JSON.stringify(state)));
       } else {
         let state = this.state;
@@ -988,7 +1062,11 @@ export default class App extends React.Component {
                         <Paper variant='outlined' className='grid-paper' bookId={value.id}
                                onContextMenu={(e)=>this.showRightMenu(e,value.id)}
                                onClick={(e)=>this.readBook(e,value.id)}
-                        >{value.name}</Paper>
+                        >
+                          <Typography variant="overline" className='word-cover' style={{display: this.state.covers[value.id] ? 'none':'-webkit-box'}} >{value.name}</Typography>
+                          <img style={{display: this.state.covers[value.id] ? 'block':'none'}} src={this.state.covers[value.id]} className='cover-img'/>
+                        </Paper>
+                        <Typography variant="overline" display="block" className='book-name' >{value.name}</Typography>
                         <Paper hidden={!value.showRight} className='grid-right-menu' id={value.id}>
                           <ClickAwayListener onClickAway={this.closeRightMenu}>
                             <MenuList  >
@@ -1021,7 +1099,7 @@ export default class App extends React.Component {
               <DialogTitle id="customized-dialog-title" style={{padding:'8px 20px',textAlign:'center'}}>使用说明</DialogTitle>
               <DialogContent dividers>
                 <Typography gutterBottom>
-                  <b style={{color:'#d25353'}}>格式支持</b>  <br/> 目前只支持txt格式文件，支持各种常见的编码格式，如utf-8、utf-16、gbk、gb2312、gb18030等。
+                  <b style={{color:'#d25353'}}>格式支持</b>  <br/> 支持txt、epub格式书籍，其中txt书籍支持各种常见的编码格式，如utf-8、utf-16、gbk、gb2312、gb18030等，epub文件只支持utf-8编码。
                 </Typography>
                 <Typography gutterBottom>
                   <b style={{color:'#d25353'}}>如何设置老板键</b> <br/> 老板键用于快速关闭或隐藏阅读窗口，使用方法：在"utools-偏好设置-全局快捷键"栏目添加快捷键，关键字填入close-fish-book即可快速关闭，关键字填入toggle-show-fish-book即可快速显示/隐藏阅读窗口。
@@ -1033,7 +1111,7 @@ export default class App extends React.Component {
                   <b style={{color:'#d25353'}}>进度跳转</b> <br/> 打开阅读窗口后，右下角会显示当前阅读进度的百分比。点击该百分比数字后会出现输入框，可以手动输入百分比数字，按回车键后即可跳转。
                 </Typography>
                 <Typography gutterBottom>
-                  <b style={{color:'#d25353'}}>设置-颜色</b> <br/> 只支持输入保存rgb和rgba色值，也可以使用取色工具取色。
+                  <b style={{color:'#d25353'}}>设置-颜色</b> <br/> 只支持输入保存rgb和rgba色值，也可以使用取色工具取色。ps:rgba颜色支持设定透明度，所以阅读器文字也是可以调节透明度的哦，具体度娘。
                 </Typography>
                 <Typography gutterBottom>
                   <b style={{color:'#d25353'}}>设置-窗口移动</b> <br/> 此设置可以切换窗口移动模式和固定模式。ps：windows机器下开启窗口移动会导致鼠标翻页和滚轮翻页失效。ps2：移动模式下每5秒钟记录一次窗口位置，所以需要记忆窗口位置的话，请在窗口移动到所需位置后停留五秒钟再关闭窗口或者切换为固定模式。
