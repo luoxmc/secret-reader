@@ -65,11 +65,13 @@ export default class App extends React.Component {
     chapter: {
       list: [],
       bookId: null,
+      bookName: '',
       showChapterList : false
     },
     search: {
       list: [],
       bookId: null,
+      bookName: '',
       show: false,
       keywords: '',
       hasMore: false,
@@ -272,7 +274,12 @@ export default class App extends React.Component {
             if(str){
               let chapters = self.getChapters(str);
               if(chapters && chapters.length > 0){
-                self.state.chapter = { list : chapters, bookId: id, showChapterList : true};
+                let name = dt.name.replace(/《/g,'').replace(/》/g,'');
+                if(name.length > 8){
+                  name = name.substring(0,8) + '...';
+                }
+                name = '《' + name + '》';
+                self.state.chapter = { list : chapters, bookId: id, bookName: name , showChapterList : true};
                 self.setState({chapter: JSON.parse(JSON.stringify(self.state.chapter))});
               } else {
                 self.showTip('未检索到章节列表，请检查文本内容格式！');
@@ -293,6 +300,7 @@ export default class App extends React.Component {
     self.state.chapter.showChapterList = false;
     self.state.chapter.list = [];
     self.state.chapter.bookId = null;
+    self.state.chapter.bookName= '';
     this.setState({chapter : JSON.parse(JSON.stringify(self.state.chapter))});
   }
   /****  打开搜索界面  ****/
@@ -302,6 +310,16 @@ export default class App extends React.Component {
     let self = this;
     self.state.search.show = true;
     self.state.search.bookId = id;
+    self.state.list.data.forEach(function(dt) {
+      if (dt && dt.id === id) {
+        let name = dt.name.replace(/《/g,'').replace(/》/g,'');
+        if(name.length > 8){
+          name = name.substring(0,8) + '...';
+        }
+        name = '《' + name + '》';
+        self.state.search.bookName = name;
+      }
+    })
     self.state.search.noResultStr = '输入关键字后回车或者点击搜索图标开始搜索';
     this.setState({search : JSON.parse(JSON.stringify(self.state.search))});
   }
@@ -311,6 +329,7 @@ export default class App extends React.Component {
     self.state.search.show = false;
     self.state.search.list = [];
     self.state.search.bookId = null;
+    self.state.search.bookName = '';
     self.state.search.keywords = '';
     self.state.search.hasMore = false;
     this.setState({search : JSON.parse(JSON.stringify(self.state.search))});
@@ -922,15 +941,11 @@ export default class App extends React.Component {
       let self = this;
       document.getElementById('closeBtn').style.color = '#ada9a9';
       //查询字体
-      console.log("start:"+new Date().getTime());
       window.services.getFonts().then( fonts => {
-        console.log("end:"+new Date().getTime());
         self.setState({fonts : JSON.parse(JSON.stringify(fonts))});
       })
-      console.log("test1")
       //查询用户书籍信息
       const list = window.utools.db.get(window.utools.getNativeId() + "/list");
-      console.log("test2")
       if(list){
         let state = this.state;
         state.deviceId = window.utools.getNativeId();
@@ -1145,7 +1160,7 @@ export default class App extends React.Component {
               </DialogContent>
             </Dialog>
             <Dialog aria-labelledby="customized-dialog-title" open={this.state.chapter.showChapterList} onClose={this.closeChapterMenu} scroll='paper'>
-              <DialogTitle id="customized-dialog-title" style={{padding:'8px 20px',textAlign:'center'}}>章节列表</DialogTitle>
+              <DialogTitle id="customized-dialog-title" style={{padding:'8px 20px',textAlign:'center'}}>{ this.state.chapter.bookName + " - 章节列表"  }</DialogTitle>
               <DialogContent dividers>
                 <List component="nav" aria-label="secondary mailbox folders">
                   {this.state.chapter.list.map((value,index) => (
@@ -1158,6 +1173,7 @@ export default class App extends React.Component {
             </Dialog>
             <Dialog aria-labelledby="customized-dialog-title" className='search-main' open={this.state.search.show} onClose={this.closeSearch} scroll='paper'>
               <DialogTitle id="customized-dialog-title" style={{padding:'8px 20px',textAlign:'center'}}>
+                <Typography variant="overline" style={{fontSize:'0.9rem'}}>{ this.state.search.bookName + " - 搜索"  }</Typography>
                 <Typography variant="overline" display="block" className='title' id='searchHeader'>
                   <span className='label'>关键字:</span>
                   <Input size="small" value={this.state.search.keywords} id='keywords' style={{width:'17rem',marginLeft: '1.5rem'}} inputProps={{ 'aria-label': 'description' }}
