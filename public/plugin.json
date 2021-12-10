@@ -18,7 +18,7 @@
             "type": "files",
             "label": "添加书籍",
             "fileType": "file",
-            "match": "/^.{1,}.[tT][xX][tT]/",
+            "match": "/^.{1,}.(txt|epub|TXT|EPUB)/",
             "minLength": 1,
             "maxLength": 1
           }
