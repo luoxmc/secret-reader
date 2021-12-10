@@ -1,8 +1,8 @@
 import React from 'react'
 import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles'
 import {
-  Grid, Paper, MenuList, MenuItem, List, ListItem, ListItemText, ClickAwayListener, Card, Input, Slider, Divider,
-  Snackbar, AppBar, Toolbar, Typography, Dialog, DialogContent, DialogTitle, DialogActions, Button, CardContent,
+  Grid, Paper, MenuList, MenuItem, List, ListItem, ListItemText, ClickAwayListener, Input, Slider,
+  Snackbar, AppBar, Toolbar, Typography, Dialog, DialogContent, DialogTitle, DialogActions, Button,
   Backdrop, CircularProgress, Switch, Select
 } from '@material-ui/core';
 import {AddCircle, Search, Settings, HelpTwoTone} from '@material-ui/icons';
@@ -54,6 +54,7 @@ export default class App extends React.Component {
 
   state = {
     theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+    fonts: [],
     deviceId: '',
     list: {
       _id : '',
@@ -89,6 +90,7 @@ export default class App extends React.Component {
         fontColor: 'rgb(187, 187, 187)',
         opacity: 0.8,
         fontSize: 14,
+        fontFamily: 'default',
         numOfPage: 100,
         winWidth: 800,
         winHeight: 55,
@@ -359,7 +361,7 @@ export default class App extends React.Component {
                       self.setState({ list: JSON.parse(JSON.stringify(window.utools.db.get(self.state.deviceId+"/list")))},()=>{
                         self.closeBook();
                         setTimeout(function () {
-                          self.readBook(null, book_id,false);
+                          self.readBook(null, book_id);
                         },150);
                       });
                     }
@@ -481,71 +483,67 @@ export default class App extends React.Component {
     return result;
   }
   /****  开始阅读  ****/
-  readBook = (e,id,reload) => {
+  readBook = (e,id) => {
     if(id === curId && ubWindow) {
       return;
     }
     let self = this;
     this.showLoading('文件编码格式检查中，请稍后...',function () {
-      if(!reload){
-        let flag = true;
-        self.state.list.data.forEach(function(dt) {
-          if (dt && dt.id === id) {
-            if(dt.type !== 'epub' && !window.services.checkFile(dt.path)){
-              self.closeLoading();
-              self.showTip("该路径下文件已不存在或不可读");
-              flag = false;
-            } else {
-              window.services.readBook(dt, (str) => {
-                if (str) {
-                  curContent = str;
-                  str = null;
-                  if(id !== curId) {
-                    curId = id;
-                  }
-                  if(!ubWindow){
-                    ubWindow = window.utools.createBrowserWindow('book.html', {
-                      useContentSize : true,
-                      skipTaskbar : true,
-                      width : self.state.user.data.winWidth ,
-                      height : self.state.user.data.winHeight,
-                      x: self.state.user.data.x,
-                      y: self.state.user.data.y,
-                      alwaysOnTop : true,
-                      frame : false,
-                      transparent : true,
-                      backgroundColor : '#00000000',
-                      hasShadow : false,
-                      webPreferences : {
-                        devTools: true,
-                        preload: 'bookPreload.js'
-                      }
-                    }, () => {
-                      document.getElementById('closeBtn').style.color = '#000000DD';
-                      //初始化阅读器
-                      ubWindow.webContents.openDevTools();
-                      const msg = {
-                        type: 1,
-                        data: self.state.user.data
-                      }
-                      window.services.sendMsg(ubWindow.webContents.id, msg);
-                      self.nextPage(true);
-                    })
-                  } else {
-                    if(!ubWindow.isVisible()){
-                      ubWindow.show();
-                    }
-                    self.nextPage(true);
-                  }
-                } else {
-                  self.showTip("解析文件失败，文件编码不支持");
+      self.state.list.data.forEach(function(dt) {
+        if (dt && dt.id === id) {
+          if(dt.type !== 'epub' && !window.services.checkFile(dt.path)){
+            self.closeLoading();
+            self.showTip("该路径下文件已不存在或不可读");
+          } else {
+            window.services.readBook(dt, (str) => {
+              if (str) {
+                curContent = str;
+                str = null;
+                if(id !== curId) {
+                  curId = id;
                 }
-                self.closeLoading();
-              })
-            }
+                if(!ubWindow){
+                  ubWindow = window.utools.createBrowserWindow('book.html', {
+                    useContentSize : true,
+                    skipTaskbar : true,
+                    width : self.state.user.data.winWidth ,
+                    height : self.state.user.data.winHeight,
+                    x: self.state.user.data.x,
+                    y: self.state.user.data.y,
+                    alwaysOnTop : true,
+                    frame : false,
+                    transparent : true,
+                    backgroundColor : '#00000000',
+                    hasShadow : false,
+                    webPreferences : {
+                      // devTools: true,
+                      preload: 'bookPreload.js'
+                    }
+                  }, () => {
+                    document.getElementById('closeBtn').style.color = '#000000DD';
+                    //初始化阅读器
+                    // ubWindow.webContents.openDevTools();
+                    const msg = {
+                      type: 1,
+                      data: self.state.user.data
+                    }
+                    window.services.sendMsg(ubWindow.webContents.id, msg);
+                    self.nextPage(true);
+                  })
+                } else {
+                  if(!ubWindow.isVisible()){
+                    ubWindow.show();
+                  }
+                  self.nextPage(true);
+                }
+              } else {
+                self.showTip("解析文件失败，文件编码不支持");
+              }
+              self.closeLoading();
+            })
           }
-        });
-      }
+        }
+      });
     });
   }
   /****  关闭阅读器  ****/
@@ -752,7 +750,7 @@ export default class App extends React.Component {
           ubWindow = null;
           let self = this;
           setTimeout(function () {
-            self.readBook(null,curId,true);
+            self.readBook(null,curId);
           },150);
         }
       });
@@ -790,7 +788,7 @@ export default class App extends React.Component {
           ubWindow = null;
           let self = this;
           setTimeout(function () {
-            self.readBook(null,curId,true);
+            self.readBook(null,curId);
           },150);
         }
       });
@@ -850,6 +848,11 @@ export default class App extends React.Component {
     config.data.wheelType =  e.target.value;
     this.setState({user : JSON.parse(JSON.stringify(config))});
   }
+  inputChange10 = (e) => {
+    let config = this.state.user;
+    config.data.fontFamily =  e.target.value;
+    this.setState({user : JSON.parse(JSON.stringify(config))});
+  }
   inputBlur = (e) => {
     document.removeEventListener('keydown', this.keyFunc);
   }
@@ -870,10 +873,10 @@ export default class App extends React.Component {
     if(/^[rR][gG][Bb][Aa]?[\(]([\s]*(2[0-4][0-9]|25[0-5]|[01]?[0-9][0-9]?),){2}[\s]*(2[0-4][0-9]|25[0-5]|[01]?[0-9][0-9]?),?[\s]*(0\.\d{1,2}|1|0)?[\)]{1}$/g.test(rgbBg)){
       let arr = rgbBg.split(',');
       if(arr.length === 3){
-        arr[2] = arr[2].replace(')',','+ value +')');
+        arr[2] = arr[2].replace(')',', '+ value +')');
         rgbBg = arr.join(",");
       } else if(arr.length === 4){
-        arr[3] = value + ')';
+        arr[3] = " " + value + ')';
         rgbBg = arr.join(",");
       }
     }
@@ -916,16 +919,24 @@ export default class App extends React.Component {
       }
     })
     window.utools.onPluginReady(() => {
+      let self = this;
       document.getElementById('closeBtn').style.color = '#ada9a9';
+      //查询字体
+      console.log("start:"+new Date().getTime());
+      window.services.getFonts().then( fonts => {
+        console.log("end:"+new Date().getTime());
+        self.setState({fonts : JSON.parse(JSON.stringify(fonts))});
+      })
+      console.log("test1")
       //查询用户书籍信息
       const list = window.utools.db.get(window.utools.getNativeId() + "/list");
+      console.log("test2")
       if(list){
         let state = this.state;
         state.deviceId = window.utools.getNativeId();
         state.list = list;
         let covers = {};
         if(list.data.length > 0){
-          let self = this;
           list.data.forEach(function (oneBook){
             if(oneBook.type && oneBook.type === 'epub' && oneBook.cover){
               const buf = window.utools.db.getAttachment(oneBook.cover);
@@ -1105,6 +1116,9 @@ export default class App extends React.Component {
                   <b style={{color:'#d25353'}}>如何设置老板键</b> <br/> 老板键用于快速关闭或隐藏阅读窗口，使用方法：在"utools-偏好设置-全局快捷键"栏目添加快捷键，关键字填入close-fish-book即可快速关闭，关键字填入toggle-show-fish-book即可快速显示/隐藏阅读窗口。
                 </Typography>
                 <Typography gutterBottom>
+                  <b style={{color:'#d25353'}}>右键菜单</b> <br/> 在书籍封面上鼠标右键，即可展示对该书籍相关操作的右键菜单，右键菜单包含'搜索跳转'、'章节跳转'、'删除书籍'三个子菜单。
+                </Typography>
+                <Typography gutterBottom>
                   <b style={{color:'#d25353'}}>章节跳转</b> <br/> 章节分割是按照"第*章、第*卷、第*回"等格式来切分的，兼容大部分网站下载的txt书籍。若提示"未检索到章节列表....."，请检查内容格式是否满足要求，不满足则无法使用章节跳转。可以使用搜索跳转来定位当前阅读进度。
                 </Typography>
                 <Typography gutterBottom>
@@ -1112,6 +1126,9 @@ export default class App extends React.Component {
                 </Typography>
                 <Typography gutterBottom>
                   <b style={{color:'#d25353'}}>设置-颜色</b> <br/> 只支持输入保存rgb和rgba色值，也可以使用取色工具取色。ps:rgba颜色支持设定透明度，所以阅读器文字也是可以调节透明度的哦，具体度娘。
+                </Typography>
+                <Typography gutterBottom>
+                  <b style={{color:'#d25353'}}>设置-字体</b> <br/> 摸鱼阅读会检索您电脑中已安装的字体，并将部分windows、Mac OS系统自带的字体以及部分开源免费的第三方字体添加到可选择的字体列表中。支持的第三方字体列表详见插件详情页的描述，如果您有需要支持的字体，请在评论区提交。ps:因为字体文件过大，不方便打包到插件中，所以支持的第三方字体也需要您自己下载安装到您的电脑之后才能在设置中看到。
                 </Typography>
                 <Typography gutterBottom>
                   <b style={{color:'#d25353'}}>设置-窗口移动</b> <br/> 此设置可以切换窗口移动模式和固定模式。ps：windows机器下开启窗口移动会导致鼠标翻页和滚轮翻页失效。ps2：移动模式下每5秒钟记录一次窗口位置，所以需要记忆窗口位置的话，请在窗口移动到所需位置后停留五秒钟再关闭窗口或者切换为固定模式。
@@ -1240,6 +1257,24 @@ export default class App extends React.Component {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="overline" display="block" >
+                      <span className='setting-label'>字体</span>
+                      <Select value={this.state.user.data.fontFamily} onChange={this.inputChange10} style={{maxWidth:'11.5rem',minWidth:'7rem',fontSize:'0.9rem',fontFamily: "'" + this.state.user.data.fontFamily + "'" }}>
+                        {this.state.fonts.map((ft) => (
+                            <MenuItem value={ft.en} style={{fontFamily: "'" + ft.en + "'"  }} >{ft.ch}</MenuItem>
+                        ))}
+                      </Select>
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="overline" display="block" >
+                      <span className='setting-label'>自动翻页</span>
+                      <Input value={this.state.user.data.autoPage} size="small" id='autoPage' inputProps={{ 'aria-label': 'description' }}
+                             placeholder='单位:秒,0为不自动翻页' type='number'
+                             onChange={(e) => this.inputChange(e,0,200)}/>
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="overline" display="block" >
                       <span className='setting-label'>上一页</span>
                       <Input value={this.state.user.data.prev}  readOnly size="small" id='prev' inputProps={{ 'aria-label': 'description' }}
                              onFocus={(e) => this.inputChange3(e)}
@@ -1272,14 +1307,6 @@ export default class App extends React.Component {
                         <MenuItem value={1}>上一页:向上;下一页:向下;</MenuItem>
                         <MenuItem value={2}>上一页:向下;下一页:向上;</MenuItem>
                       </Select>
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="overline" display="block" >
-                      <span className='setting-label'>自动翻页</span>
-                      <Input value={this.state.user.data.autoPage} size="small" id='autoPage' inputProps={{ 'aria-label': 'description' }}
-                             placeholder='单位:秒,0为不自动翻页' type='number'
-                             onChange={(e) => this.inputChange(e,0,200)}/>
                     </Typography>
                   </Grid>
                 </Grid>

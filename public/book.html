@@ -60,6 +60,9 @@
                 if(config.spacingY){
                     $("#bookContent").css("line-height", Math.ceil(config.spacingY * config.fontSize) + "px");
                 }
+                if(config.fontFamily && config.fontFamily !== 'default'){
+                    $("#bookContent").css("font-family", "'" + config.fontFamily +  "'");
+                }
                 $("#percent").css("color",config.fontColor).css("font-size",(config.fontSize-2) + 'px');
                 $("#percent input").css("font-size",(config.fontSize-2) + 'px');
                 $("#bookContent").css("-webkit-app-region",config.isMove ? "drag" : "no-drag");
