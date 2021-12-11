@@ -1035,11 +1035,11 @@ export default class App extends React.Component {
             //百分比跳转
             self.state.list.data.forEach(function(dt) {
               if (dt && dt.id === curId) {
-                dt.progress = parseInt((curContent.length * (res.data/100)).toString());
+                dt.progress = parseInt((curContent.length * (res.data/100) - Number(self.state.user.data.numOfPage)).toString());
                 let result = window.utools.db.put(self.state.list);
                 if(result && result.ok) {
                   self.setState({ list: JSON.parse(JSON.stringify(window.utools.db.get(self.state.deviceId+"/list")))},()=>{
-                    self.nextPage();
+                    self.nextPage(true);
                   });
                 }
               }

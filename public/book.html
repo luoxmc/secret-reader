@@ -16,6 +16,16 @@
             -ms-user-select:none;
             user-select:none;
         }
+        #tips {
+            position: fixed;
+            top: 10%;
+            left: 30%;
+            width: 40%;
+            background: rgba(255, 255, 255, 0.75);
+            color: rgba(48, 49, 51, 0.95);
+            border-radius: 5px;
+            font-size: 12px;
+        }
         #percent {
             position: fixed;
             right: 2px;
@@ -25,7 +35,6 @@
             border: none;
             background: none;
             outline: none;
-            width: 2.2rem;
         }
         #percent input:focus{
             border: 1px solid #8f8a8a82;
@@ -42,6 +51,7 @@
     <div id="bookContent"></div>
     <div style="display: none;position: fixed;width: 100%;height: 100%;left: 0; top: 0;-webkit-app-region: no-drag;" id="cover"></div>
     <div id="percent" style="-webkit-app-region: no-drag;"><input type="number" oninput="percentChange()" />%</div>
+    <div id="tips" style="display: none;"></div>
     <script>
         let windowLeft = window.screenLeft;
         let windowTop = window.screenTop;
@@ -100,17 +110,19 @@
             } else if(res.type === 2 && res.data){
                 //推送内容
                 $("#bookContent").html(res.data);
-                let widthPerNum ;
-                if(config.fontSize < 15){
-                    widthPerNum = config.fontSize * 0.031;
-                } else if (config.fontSize >= 16 && config.fontSize < 18){
-                    widthPerNum = config.fontSize * 0.032;
-                } else if (config.fontSize >= 18 && config.fontSize < 25){
-                    widthPerNum = config.fontSize * 0.033;
-                } else {
-                    widthPerNum = config.fontSize * 0.034;
+                $("#percent input").val(res.progress);
+                $("#percent input").width("2px");
+                $("#percent input").width($("#percent input")[0].scrollWidth - 4.5);
+                let diffHeight = $("#bookContent")[0].scrollHeight - $("#bookContent").outerHeight();
+                let diffWidth = $("#bookContent")[0].scrollWidth - $("#bookContent").outerWidth();
+                if(diffHeight > 6 || diffWidth > 6) {
+                    if($("#tips").is(':hidden')){
+                        $("#tips").text("内容已经溢出阅读窗口，请调整窗口大小或者到设置中调整每页字数").show();
+                        setTimeout(function () {
+                            $("#tips").hide();
+                        },2000);
+                    }
                 }
-                $("#percent input").val(res.progress).css("width", res.progress.toString().length * widthPerNum + "rem");
             } else if (res.type === 7 && res.data){
                 //推送窗口显示状态切换
                 if(config && config.autoPage && config.autoPage !== 0){
