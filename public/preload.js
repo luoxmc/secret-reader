@@ -167,9 +167,9 @@ window.services = {
   /***  获取系统支持的字体列表  ***/
   getFonts : () => {
     return new Promise((resolve) => {
-      let fonts = [{"ch":"站酷快乐体","en":"HappyZcool-2016"},{"ch":"站酷酷黑体","en":"ZCOOL_KuHei"},{"ch":" 站酷高端黑体","en":"zcool-gdh"},{"ch":" 站酷文艺体","en":"zcoolwenyiti"},{"ch":" 站酷庆科黄油体","en":"zcoolqingkehuangyouti"},
+      let fonts = [{"ch":"站酷快乐体","en":"HappyZcool-2016"},{"ch":"站酷酷黑体","en":"ZCOOL_KuHei"},{"ch":"站酷高端黑体","en":"zcool-gdh"},{"ch":"站酷文艺体","en":"zcoolwenyiti"},{"ch":"站酷庆科黄油体","en":"zcoolqingkehuangyouti"},
         {"ch":"思源黑体","en":"Source Han Sans CN"},{"ch":"思源宋体","en":"Source Han Serif SC"},{"ch":"文泉驿微米黑","en":"WenQuanYi Micro Hei"},
-        {"ch":"宋体","en":"SimSun"},{"ch":"黑体","en":"SimHei"},{"ch":"微软雅黑","en":"Microsoft Yahei"},{"ch":"微软正黑体","en":"Microsoft JhengHei"},{"ch":"楷体","en":"KaiTi"},{"ch":"新宋体","en":"NSimSun"},{"ch":"仿宋","en":"FangSong"},
+        {"ch":"宋体","en":"SimSun"},{"ch":"黑体","en":"SimHei"},{"ch":"微软雅黑","en":"Microsoft Yahei"},{"ch":"微软正黑体","en":"Microsoft JhengHei"},{"ch":"楷体","en":"KaiTi"},{"ch":"新宋体","en":"NSimSun"},{"ch":"仿宋","en":"FangSong"},{"ch":"细明体","en":"MingLiU"},{"ch":"新细明体","en":"PMingLiU"},
         {"ch":"苹方","en":"PingFang SC"},{"ch":"华文黑体","en":"STHeiti"},{"ch":"华文楷体","en":"STKaiti"},{"ch":"华文宋体","en":"STSong"},{"ch":"华文仿宋","en":"STFangsong"},{"ch":"华文中宋","en":"STZhongsong"},{"ch":"华文隶书","en":"STLiti"},{"ch":"华文行楷","en":"STXingkai"},{"ch":"华康翩翩体-简","en":"HanziPen SC"},{"ch":"冬青黑体-简","en":"Hiragino Sans GB"},{"ch":"兰亭黑-简","en":"Lantinghei SC"},{"ch":"翩翩体-简","en":"Hanzipen SC"},{"ch":"手札体-简","en":"Hannotate SC"},{"ch":"宋体-简","en":"Songti SC"},{"ch":"娃娃体-简","en":"Wawati SC"},{"ch":"魏碑-简","en":"Weibei SC"},{"ch":"行楷-简","en":"Xingkai SC"},{"ch":"雅痞-简","en":"Yuppy SC"},{"ch":"圆体-简","en":"Yuanti SC"}]
       let result = [{"ch":"系统默认","en":"default"}];
       let e = "a";
@@ -186,7 +186,7 @@ window.services = {
       b.textBaseline = "middle";
       let g = function(j) {
         b.clearRect(0, 0, a, i);
-        b.font = d + "px " + j + ", " + h;
+        b.font = d + "px '" + j + "', " + h;
         b.fillText(e, a / 2, i / 2);
         let k = b.getImageData(0, 0, a, i).data;
         return [].slice.call(k).filter(function(l) {

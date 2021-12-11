@@ -1276,7 +1276,7 @@ export default class App extends React.Component {
                       <span className='setting-label'>字体</span>
                       <Select value={this.state.user.data.fontFamily} onChange={this.inputChange10} style={{maxWidth:'11.5rem',minWidth:'7rem',fontSize:'0.9rem',fontFamily: "'" + this.state.user.data.fontFamily + "'" }}>
                         {this.state.fonts.map((ft) => (
-                            <MenuItem value={ft.en} style={{fontFamily: "'" + ft.en + "'"  }} >{ft.ch}</MenuItem>
+                            <MenuItem value={ft.en} style={{fontFamily: "'" + ft.en + "'", minWidth: '9rem' }} >{ft.ch}</MenuItem>
                         ))}
                       </Select>
                     </Typography>
