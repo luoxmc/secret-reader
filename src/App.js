@@ -1161,7 +1161,7 @@ export default class App extends React.Component {
             </Dialog>
             <Dialog aria-labelledby="customized-dialog-title" open={this.state.chapter.showChapterList} onClose={this.closeChapterMenu} scroll='paper'>
               <DialogTitle id="customized-dialog-title" style={{padding:'8px 20px',textAlign:'center'}}>{ this.state.chapter.bookName + " - 章节列表"  }</DialogTitle>
-              <DialogContent dividers>
+              <DialogContent dividers style={{minWidth:'20rem'}}>
                 <List component="nav" aria-label="secondary mailbox folders">
                   {this.state.chapter.list.map((value,index) => (
                       <ListItem button>
