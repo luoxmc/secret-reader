@@ -59,7 +59,7 @@ window.services = {
     }
     callback(str);
   },
-  //获取epub书籍的内容封面等信息
+  /***  获取epub书籍的内容封面等信息  ***/
   getEpubInfo : (path,callback) => {
     let result = {error_no : 0};
     let epub = new EPub(path);
@@ -101,6 +101,7 @@ window.services = {
             str += cont.replace(/<\/?.+?>/g,"");
           }
           let buffer = Buffer.from(str);
+          str = null;
           let content = [];
           if(buffer){
             //utools数据库附件大小限制10m，若过大则拆分成多个
@@ -119,7 +120,6 @@ window.services = {
           }
           buffer = null;
           result.content = content;
-          str = null;
           if(epub.metadata && epub.metadata.cover){
             let image = await findCover(epub.metadata.cover)
             result.cover = image;

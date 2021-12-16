@@ -782,17 +782,20 @@ export default class App extends React.Component {
     let config = this.state.user;
     config.data = {
       bgColor: 'rgb(59, 62, 64, 0.8)',
-          fontColor: 'rgb(187, 187, 187)',
-        opacity: 0.8,
-        fontSize: 14,
-        numOfPage: 100,
-        winWidth: 800,
-        winHeight: 55,
-        autoPage: 0,
-        prev: window.platform.isMacOs ? 'Command+ArrowLeft' : 'Control+[',
-        next: window.platform.isMacOs ? 'Command+ArrowRight' : 'Control+]',
-        isMove: true,
-        mouseType: 0
+      fontColor: 'rgb(187, 187, 187)',
+      opacity: 0.8,
+      fontSize: 14,
+      numOfPage: 100,
+      winWidth: 800,
+      winHeight: 55,
+      autoPage: 0,
+      prev: window.platform.isMacOs ? 'Command+ArrowLeft' : 'Control+[',
+      next: window.platform.isMacOs ? 'Command+ArrowRight' : 'Control+]',
+      isMove: true,
+      mouseType: 0,
+      spacing: 0,
+      spacingY: 1.2,
+      wheelType: 0
     };
     config.data.x = window.screenLeft + 90;
     config.data.y = window.screenTop + 180;
