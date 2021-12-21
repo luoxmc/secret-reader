@@ -272,7 +272,7 @@ export default class App extends React.Component {
         if(dt && dt.id === id){
           window.services.readBook(dt, (str) => {
             if(str){
-              let chapters = self.getChapters(str);
+              let chapters = self.getChapters(str,dt.progress);
               if(chapters && chapters.length > 0){
                 let name = dt.name.replace(/《/g,'').replace(/》/g,'');
                 if(name.length > 8){
@@ -280,7 +280,19 @@ export default class App extends React.Component {
                 }
                 name = '《' + name + '》';
                 self.state.chapter = { list : chapters, bookId: id, bookName: name , showChapterList : true};
-                self.setState({chapter: JSON.parse(JSON.stringify(self.state.chapter))});
+                self.setState({chapter: JSON.parse(JSON.stringify(self.state.chapter))},() => {
+                  let timerLimit = 0;
+                  let scrollTimer = setInterval(() => {
+                    if(document.getElementById("curChapter")){
+                      document.getElementById("curChapter").scrollIntoView({block: "center"});
+                      clearInterval(scrollTimer);
+                    }
+                    timerLimit ++;
+                    if(timerLimit > 6){
+                      clearInterval(scrollTimer);
+                    }
+                  },30);
+                });
               } else {
                 self.showTip('未检索到章节列表，请检查文本内容格式！');
               }
@@ -362,37 +374,18 @@ export default class App extends React.Component {
     if(this.state.chapter && this.state.chapter.list){
       this.state.list.data.forEach(function(dt) {
         if (dt && dt.id === self.state.chapter.bookId) {
-          window.services.readBook(dt, (str) => {
-            if (str) {
-              let count = 0;
-              self.state.chapter.list.forEach(function (vlu,idx){
-                if(vlu === keywords){
-                  count ++;
-                }
-                if(idx === index){
-                  keywords = keywords.replace(/\n/g , '');
-                  let x = self.findStr(str,keywords,count);
-                  if(x && x > 0){
-                    dt.progress = Number(x);
-                    let res = window.utools.db.put(self.state.list);
-                    if(res && res.ok) {
-                      const book_id = self.state.chapter.bookId;
-                      self.setState({ list: JSON.parse(JSON.stringify(window.utools.db.get(self.state.deviceId+"/list")))},()=>{
-                        self.closeBook();
-                        setTimeout(function () {
-                          self.readBook(null, book_id);
-                        },150);
-                      });
-                    }
-                  } else {
-                    self.showTip("跳转失败");
-                  }
-                  self.closeChapterMenu();
-                }
-              })
-              str = null;
-            }
-          })
+          dt.progress = Number(index);
+          let res = window.utools.db.put(self.state.list);
+          if(res && res.ok) {
+            const book_id = self.state.chapter.bookId;
+            self.setState({ list: JSON.parse(JSON.stringify(window.utools.db.get(self.state.deviceId+"/list")))},()=>{
+              self.closeBook();
+              setTimeout(function () {
+                self.readBook(null, book_id);
+              },150);
+            });
+          }
+          self.closeChapterMenu();
         }
       });
     }
@@ -468,7 +461,7 @@ export default class App extends React.Component {
   }
   /****  查找字符串出现的位置  ****/
   findStr = (str,keywords,num) => {
-    let x = null;
+    let x = -1;
     for(let i=0; i<num; i++){
       x = str.indexOf(keywords,x+1);
     }
@@ -645,12 +638,40 @@ export default class App extends React.Component {
     this.setState({msg: JSON.parse(JSON.stringify(self.state.msg))});
   }
   /****  章节划分  ****/
-  getChapters = (str) => {
+  getChapters = (str,cur) => {
+    let self = this;
     let reg = /(正文){0,1}(第)([零〇一二三四五六七八九十百千万a-zA-Z0-9]{1,7})[章节卷集部篇回]((?! {4}).)((?!\t{1,4}).){0,30}\r?\n/g;
-    let list = [];
     let result = str.match(reg);
-    result && list.push(...result);
-    return list;
+    let chapters = [];
+    if (result && result.length > 0) {
+      let flag = true;
+      result.forEach((val,idx) => {
+        let count = 0;
+        for (let i = 0; i < result.length; i++) {
+          if(val === result[i]){
+            count ++;
+          }
+          if(idx === i){
+            let x = self.findStr(str,val,count);
+            if(x >= 0){
+              if(chapters.length > 0 && x > cur && flag){
+                let tmp = chapters[chapters.length-1];
+                tmp.isCur = true;
+                chapters.splice(chapters.length-1, 1, tmp);
+                flag = false;
+              }
+              chapters.push({
+                name: val,
+                index: x,
+                isCur: false
+              })
+            }
+            break;
+          }
+        }
+      })
+    }
+    return chapters;
   }
   /****   取色  ****/
   pickColor = (e) => {
@@ -1166,9 +1187,10 @@ export default class App extends React.Component {
               <DialogTitle id="customized-dialog-title" style={{padding:'8px 20px',textAlign:'center'}}>{ this.state.chapter.bookName + " - 章节列表"  }</DialogTitle>
               <DialogContent dividers style={{minWidth:'20rem'}}>
                 <List component="nav" aria-label="secondary mailbox folders">
-                  {this.state.chapter.list.map((value,index) => (
+                  {this.state.chapter.list.map((value) => (
                       <ListItem button>
-                        <ListItemText onClick={(e)=>this.chapterToBook(e,value,index)}>{value}</ListItemText>
+                        <ListItemText onClick={(e)=>this.chapterToBook(e,value.name,value.index)}
+                             style={{color: value.isCur ? 'rgb(213 87 49 / 85%)':'inherit'}} id={value.isCur ? "curChapter" : value.index}>{value.name}</ListItemText>
                       </ListItem>
                   ))}
                 </List>
