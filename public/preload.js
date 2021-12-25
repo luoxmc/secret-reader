@@ -3,7 +3,7 @@ const { ipcRenderer } = require('electron');
 const iconv = require('iconv-lite');
 const jschardet = require("jschardet");
 const EPub = require("epub");
-
+const mobi = require("js-mobi/Mobi");
 window.services = {
   /***  从本地txt文件读取小说内容  ***/
   readBook: (dt,callback) => {
@@ -12,7 +12,7 @@ window.services = {
     }
     let str = '';
     let buffer ;
-    if (dt.type && dt.type === 'epub'){
+    if (dt.type && (dt.type === 'epub' || dt.type === 'mobi') ){
       let paths = dt.path.split(',');
       if(paths && paths.length > 0){
         let tmp = [];
@@ -29,6 +29,7 @@ window.services = {
       }
     } else {
       buffer = fs.readFileSync(dt.path);
+      console.log(buffer)
     }
     if(!buffer || buffer.length <= 0){
       callback(null);
@@ -46,6 +47,8 @@ window.services = {
     //用检查出来的编码将buffer转成字符串
     if(encodingCheck.confidence > 0.45){
       str = iconv.decode(buffer , encodingCheck.encoding);
+    } else {
+      str = iconv.decode(buffer , 'utf-8');
     }
     if(str){
       //去除字符串中多余的空格、换行、制表符等
@@ -137,6 +140,74 @@ window.services = {
       callback(result);
     });
     epub.parse();
+  },
+  /***  获取mobi书籍的内容封面等信息  ***/
+  getMobiInfo : (path,callback) => {
+    let result = {error_no : 0};
+    console.log(new Date().getTime())
+    fs.readFile(path, (err,buffer) => {
+      if(err){
+        console.log(err);
+        result.error_no = 98;
+        result.error_info = '读取文件出错，错误信息：' + err;
+      } else {
+        let uint8 = Uint8Array.from(buffer);
+        buffer = null;
+        let book = mobi.default.read(uint8);
+        uint8 = null;
+        console.log(new Date().getTime())
+        let list = book.getTextContent().split("<mbp:pagebreak/>")
+        //去头去尾去章节列表
+        list.splice(0, 1);
+        let allStr = '';
+        list.forEach(function (ele,idx) {
+          let reg1 = /(第)([零〇一二三四五六七八九十百千万a-zA-Z0-9]{1,7})[章节卷集部篇回]/g;
+          let result = ele.match(reg1);
+          if (!result || result.length < 10) {
+            let str = '';
+            let reg = /(第)([零〇一二三四五六七八九十百千万a-zA-Z0-9]{1,7})[章节卷集部篇回]((?!<).){0,30}/g;
+            let title = ele.match(reg)
+            if(title && title.length > 0){
+              ele = ele.replace(reg,'');
+              str = str + title[0] + '\n'
+            }
+            str = str + ele.replace(/<\/?.+?>/g,"") + "\n";
+            if(idx === list.length -1 && str.length < 100){
+              //最后一个长度不符合章节标准则移除
+            } else {
+              allStr += str;
+            }
+          }
+        });
+        if(allStr && allStr.length > 100){
+          let bufferSave = Buffer.from(allStr);
+          allStr = null;
+          let content = [];
+          if(bufferSave){
+            //utools数据库附件大小限制10m，若过大则拆分成多个
+            for (let i = 0; i < Math.ceil(bufferSave.length/9500000); i++){
+              if( i === Math.ceil(bufferSave.length/9500000) -1){
+                //最后一次循环
+                let tmpBuffer = new Buffer(bufferSave.length - (Math.ceil(bufferSave.length/9500000) - 1) * 9500000 );
+                bufferSave.copy(tmpBuffer,0,i * 9500000 ,bufferSave.length );
+                content.push(tmpBuffer);
+              } else {
+                let tmpBuffer = new Buffer(9500000);
+                bufferSave.copy(tmpBuffer,0,i * 9500000 ,(i+1)*9500000 );
+                content.push(tmpBuffer);
+              }
+            }
+          }
+          bufferSave = null;
+          result.content = content;
+          result.error_info = '解析成功';
+        } else {
+          result.error_no = 99;
+          result.error_info = '解析失败';
+        }
+      }
+      callback(result);
+    });
   },
   /***  向阅读窗口发送消息  ***/
   sendMsg : (id,msg) => {

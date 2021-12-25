@@ -26,6 +26,7 @@
     "css-loader": "^5.2.6",
     "electron": "^15.3.0",
     "epub": "^1.2.1",
+    "js-mobi": "^0.0.2",
     "less": "^4.1.1",
     "less-loader": "^9.1.0",
     "style-loader": "^2.0.0",

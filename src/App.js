@@ -89,7 +89,7 @@ export default class App extends React.Component {
       _id : '',
       data : {
         bgColor: 'rgb(59, 62, 64, 0.8)',
-        fontColor: 'rgb(187, 187, 187)',
+        fontColor: 'rgb(187, 187, 187, 0.9)',
         opacity: 0.8,
         fontSize: 14,
         fontFamily: 'default',
@@ -120,7 +120,7 @@ export default class App extends React.Component {
   /****  选择文件  ****/
   checkFile = () => {
     let file = window.utools.showOpenDialog({
-      filters: [{ 'name': 'Txt', extensions: ['txt','epub'] }],
+      filters: [{ 'name': 'Txt', extensions: ['txt','epub','mobi'] }],
       properties: ['openFile']
     })
     if(file && file.length > 0){
@@ -138,9 +138,9 @@ export default class App extends React.Component {
     let tmpList = this.state.list;
     let name = '';
     if(window.platform.isWindows){
-      name = path.replace('.txt','').replace('.epub','').substring(path.lastIndexOf("\u005C") + 1);
+      name = path.replace('.txt','').replace('.epub','').replace('.mobi','').substring(path.lastIndexOf("\u005C") + 1);
     } else {
-      name = path.replace('.txt','').replace('.epub','').substring(path.lastIndexOf("/") + 1);
+      name = path.replace('.txt','').replace('.epub','').replace('.mobi','').substring(path.lastIndexOf("/") + 1);
     }
     if(name.length > 20){
       name = name.substring(0,20) + "...";
@@ -156,9 +156,9 @@ export default class App extends React.Component {
       return;
     }
     const bookId = new Date().getTime().toString();
+    let self = this;
     if(path.endsWith('.epub')){
-      this.showLoading();
-      let self = this;
+      this.showLoading("正在解析epub书籍内容");
       window.services.getEpubInfo(path,(res) => {
         if(res.error_no === 0){
           if(!res.content || res.content.length <= 0){
@@ -184,8 +184,35 @@ export default class App extends React.Component {
         }
         self.closeLoading();
       });
+    } else if (path.endsWith(".mobi")) {
+      this.showLoading("正在解析mobi书籍内容");
+      window.services.getMobiInfo(path,(res) => {
+        if(res.error_no === 0){
+          if(!res.content || res.content.length <= 0){
+            self.showTip("未获取到mobi书籍内容！");
+            return;
+          }
+          //封面以及书籍内容存入db
+          let coverId = "";
+          if(res.cover){
+            coverId = window.utools.getNativeId()+"/"+ bookId + "/cover";
+            window.utools.db.postAttachment( coverId ,res.cover, 'image/png');
+          }
+          let bookPath = "";
+          for (let i = 0; i < res.content.length; i++){
+            let one = window.utools.getNativeId()+"/"+ bookId + "/content" + i;
+            bookPath = bookPath + one + ','
+            window.utools.db.postAttachment( one ,res.content[i], 'text/plain');
+          }
+          bookPath = bookPath.substring(0, bookPath.length - 1);
+          self.addToDb('mobi',bookId,name,bookPath,coverId);
+        } else {
+          self.showTip("读取mobi书籍失败！");
+        }
+        self.closeLoading();
+      });
     } else {
-      this.addToDb('txt',bookId,name,path,'');
+      this.addToDb("txt",bookId,name,path,'');
     }
   }
   addToDb = (type,bookId,name,path,coverId) => {
@@ -238,7 +265,7 @@ export default class App extends React.Component {
     let self = this;
     this.state.list.data.forEach((dt, index) => {
       if (dt && dt.id === self.state.deleteBook.bookId) {
-        if ( dt.type && dt.type === 'epub' ){
+        if ( dt.type && (dt.type === 'epub' || dt.type === 'mobi')){
           //epub书籍删除时先删除存utools数据库的内容和封面
           let paths = dt.path.split(',');
           if(paths && paths.length > 0){
@@ -500,10 +527,10 @@ export default class App extends React.Component {
       return;
     }
     let self = this;
-    this.showLoading('文件编码格式检查中，请稍后...',function () {
+    this.showLoading('文件编码格式检查中，请稍等...',function () {
       self.state.list.data.forEach(function(dt) {
         if (dt && dt.id === id) {
-          if(dt.type !== 'epub' && !window.services.checkFile(dt.path)){
+          if(dt.type !== 'epub' && dt.type !== 'mobi' && !window.services.checkFile(dt.path)){
             self.closeLoading();
             self.showTip("该路径下文件已不存在或不可读");
           } else {
@@ -803,7 +830,8 @@ export default class App extends React.Component {
     let config = this.state.user;
     config.data = {
       bgColor: 'rgb(59, 62, 64, 0.8)',
-      fontColor: 'rgb(187, 187, 187)',
+      fontColor: 'rgb(187, 187, 187, 0.9)',
+      fontFamily: 'default',
       opacity: 0.8,
       fontSize: 14,
       numOfPage: 100,
@@ -1149,7 +1177,7 @@ export default class App extends React.Component {
               <DialogTitle id="customized-dialog-title" style={{padding:'8px 20px',textAlign:'center'}}>使用说明</DialogTitle>
               <DialogContent dividers>
                 <Typography gutterBottom>
-                  <b style={{color:'#d25353'}}>格式支持</b>  <br/> 支持txt、epub格式书籍，其中txt书籍支持各种常见的编码格式，如utf-8、utf-16、gbk、gb2312、gb18030等，epub文件只支持utf-8编码。
+                  <b style={{color:'#d25353'}}>格式支持</b>  <br/> 支持txt、epub、mobi三种格式的电子书，其中txt书籍支持各种常见的编码格式，如utf-8、utf-16、gbk、gb2312、gb18030等。epub文件只支持utf-8编码。mobi只做了简单的支持，尽量使用txt和epub格式书籍。
                 </Typography>
                 <Typography gutterBottom>
                   <b style={{color:'#d25353'}}>如何设置老板键</b> <br/> 老板键用于快速关闭或隐藏阅读窗口，使用方法：在"utools-偏好设置-全局快捷键"栏目添加快捷键，关键字填入close-fish-book即可快速关闭，关键字填入toggle-show-fish-book即可快速显示/隐藏阅读窗口。
