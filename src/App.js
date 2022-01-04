@@ -987,6 +987,14 @@ export default class App extends React.Component {
           }
         }
         window.utools.hideMainWindow();
+      } else if(enter && enter.code === 'toggle-auto'){
+        if(ubWindow && !ubWindow.isDestroyed()){
+          const msg = {
+            type: 8
+          }
+          window.services.sendMsg(ubWindow.webContents.id, msg);
+        }
+        window.utools.hideMainWindow();
       }
     })
     window.utools.onPluginReady(() => {
@@ -1180,7 +1188,7 @@ export default class App extends React.Component {
                   <b style={{color:'#d25353'}}>格式支持</b>  <br/> 支持txt、epub、mobi三种格式的电子书，其中txt书籍支持各种常见的编码格式，如utf-8、utf-16、gbk、gb2312、gb18030等。epub文件只支持utf-8编码。mobi只做了简单的支持，尽量使用txt和epub格式书籍。
                 </Typography>
                 <Typography gutterBottom>
-                  <b style={{color:'#d25353'}}>如何设置老板键</b> <br/> 老板键用于快速关闭或隐藏阅读窗口，使用方法：在"utools-偏好设置-全局快捷键"栏目添加快捷键，关键字填入close-fish-book即可快速关闭，关键字填入toggle-show-fish-book即可快速显示/隐藏阅读窗口。
+                  <b style={{color:'#d25353'}}>如何设置老板键</b> <br/> 老板键用于快速关闭或隐藏阅读窗口，使用方法：在"utools-偏好设置-全局快捷键"栏目添加快捷键，关键字填入close-fish-book即可快速关闭，关键字填入toggle-show-fish-book即可快速显示/隐藏阅读窗口，关键字填入toggle-auto-page即可快读启动/暂停自动翻页（仅当自动翻页开关打开的情况下）。
                 </Typography>
                 <Typography gutterBottom>
                   <b style={{color:'#d25353'}}>右键菜单</b> <br/> 在书籍封面上鼠标右键，即可展示对该书籍相关操作的右键菜单，右键菜单包含'搜索跳转'、'章节跳转'、'删除书籍'三个子菜单。

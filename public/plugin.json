@@ -37,6 +37,13 @@
         "cmds": [
           "toggle-show-fish-book"
         ]
+      },
+      {
+        "code": "toggle-auto",
+        "explain": "启动/停止自动翻页",
+        "cmds": [
+          "toggle-auto-page"
+        ]
       }
   ]
 }

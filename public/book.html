@@ -63,6 +63,7 @@
         let autoPageTimer = null;
         let pointX = null;
         let pointY = null;
+        let pauseSelf = false;
 
         window.bookServices.receiveMsg(function (res){
             if(res.type === 1 && res.data){
@@ -99,6 +100,7 @@
                     setPageInterval();
                 } else {
                     clearInterval(autoPageTimer);
+                    autoPageTimer = null;
                 }
                 if(config.isMove){
                     setInterval(function (){
@@ -132,8 +134,32 @@
                 if(config && config.autoPage && config.autoPage !== 0){
                     if(res.data === 'hide'){
                         clearInterval(autoPageTimer);
+                        autoPageTimer = null;
                     } else if(res.data === 'show'){
                         setPageInterval();
+                    }
+                }
+            } else if (res.type === 8){
+                //启动、暂停 自动翻页
+                if(config && config.autoPage && config.autoPage !== 0){
+                    let txt = '';
+                    if(autoPageTimer){
+                        clearInterval(autoPageTimer);
+                        autoPageTimer = null;
+                        //快捷键暂停标志
+                        pauseSelf = true;
+                        txt = "自动翻页已暂停";
+                    } else {
+                        setPageInterval();
+                        //快捷键暂停标志
+                        pauseSelf = false;
+                        txt = "自动翻页已恢复";
+                    }
+                    if($("#tips").is(':hidden')){
+                        $("#tips").text(txt).show();
+                        setTimeout(function () {
+                            $("#tips").hide();
+                        },1400);
                     }
                 }
             }
@@ -236,7 +262,7 @@
                             data: 'prev'
                         }
                         window.bookServices.sendMsg(msg);
-                        if(config && config.autoPage && config.autoPage !== 0){
+                        if(config && config.autoPage && config.autoPage !== 0 && !pauseSelf){
                             setPageInterval();
                         }
                     }
@@ -254,7 +280,7 @@
                             data: 'next'
                         }
                         window.bookServices.sendMsg(msg);
-                        if(config && config.autoPage && config.autoPage !== 0){
+                        if(config && config.autoPage && config.autoPage !== 0 && !pauseSelf){
                             setPageInterval();
                         }
                     }
@@ -304,7 +330,7 @@
                 data: e.button === prevKey ? "prev" : "next"
             }
             window.bookServices.sendMsg(msg);
-            if(config && config.autoPage && config.autoPage !== 0){
+            if(config && config.autoPage && config.autoPage !== 0 && !pauseSelf){
                 setPageInterval();
             }
         }
@@ -324,7 +350,7 @@
                     data: command
                 }
                 window.bookServices.sendMsg(msg);
-                if(config && config.autoPage && config.autoPage !== 0){
+                if(config && config.autoPage && config.autoPage !== 0 && !pauseSelf){
                     setPageInterval();
                 }
                 setTimeout(function () {
