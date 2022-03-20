@@ -667,7 +667,7 @@ export default class App extends React.Component {
   /****  章节划分  ****/
   getChapters = (str,cur) => {
     let self = this;
-    let reg = /(正文){0,1}(第)([零〇一二三四五六七八九十百千万a-zA-Z0-9]{1,7})[章节卷集部篇回]((?! {4}).)((?!\t{1,4}).){0,30}\r?\n/g;
+    let reg = /(正文){0,1}(第)([零〇一二三四五六七八九十百千万a-zA-Z0-9]{1,7})[章节卷篇回]\s+((?! {4}).)((?!\t{1,4}).){0,30}\r?\n/g;
     let result = str.match(reg);
     let chapters = [];
     if (result && result.length > 0) {
@@ -1188,7 +1188,7 @@ export default class App extends React.Component {
                   <b style={{color:'#d25353'}}>格式支持</b>  <br/> 支持txt、epub、mobi三种格式的电子书，其中txt书籍支持各种常见的编码格式，如utf-8、utf-16、gbk、gb2312、gb18030等。epub文件只支持utf-8编码。mobi只做了简单的支持，尽量使用txt和epub格式书籍。
                 </Typography>
                 <Typography gutterBottom>
-                  <b style={{color:'#d25353'}}>如何设置老板键</b> <br/> 老板键用于快速关闭或隐藏阅读窗口，使用方法：在"utools-偏好设置-全局快捷键"栏目添加快捷键，关键字填入close-fish-book即可快速关闭，关键字填入toggle-show-fish-book即可快速显示/隐藏阅读窗口，关键字填入toggle-auto-page即可快读启动/暂停自动翻页（仅当自动翻页开关打开的情况下）。
+                  <b style={{color:'#d25353'}}>如何设置老板键</b> <br/> 老板键用于快速关闭或隐藏阅读窗口，使用方法：在"utools-偏好设置-全局快捷键"栏目添加快捷键，关键字填入close-fish-book即可快速关闭，关键字填入toggle-show-fish-book即可快速显示/隐藏阅读窗口，关键字填入toggle-auto-page即可快速启动/暂停自动翻页（仅当自动翻页开关打开的情况下）。
                 </Typography>
                 <Typography gutterBottom>
                   <b style={{color:'#d25353'}}>右键菜单</b> <br/> 在书籍封面上鼠标右键，即可展示对该书籍相关操作的右键菜单，右键菜单包含'搜索跳转'、'章节跳转'、'删除书籍'三个子菜单。
