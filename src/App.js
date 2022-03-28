@@ -105,7 +105,8 @@ export default class App extends React.Component {
         mouseType: 0,
         spacing: 0,
         spacingY: 1.2,
-        wheelType: 0
+        wheelType: 0,
+        keepFormat: false
       },
       _rev : ''
     },
@@ -297,7 +298,7 @@ export default class App extends React.Component {
     this.showLoading('', function () {
       self.state.list.data.forEach(function(dt){
         if(dt && dt.id === id){
-          window.services.readBook(dt, (str) => {
+          window.services.readBook(dt, self.state.user.data.keepFormat, (str) => {
             if(str){
               let chapters = self.getChapters(str,dt.progress);
               if(chapters && chapters.length > 0){
@@ -428,7 +429,7 @@ export default class App extends React.Component {
       let self = this;
       this.state.list.data.forEach(function(dt) {
         if (dt && dt.id === self.state.search.bookId) {
-          window.services.readBook(dt, (str) => {
+          window.services.readBook(dt, self.state.user.data.keepFormat, (str) => {
             if (str) {
               let index = 0;
               let tmp = self.state.search;
@@ -534,7 +535,7 @@ export default class App extends React.Component {
             self.closeLoading();
             self.showTip("该路径下文件已不存在或不可读");
           } else {
-            window.services.readBook(dt, (str) => {
+            window.services.readBook(dt, self.state.user.data.keepFormat, (str) => {
               if (str) {
                 curContent = str;
                 str = null;
@@ -615,7 +616,7 @@ export default class App extends React.Component {
               let ps = (Math.round(((dt.progress + Number(self.state.user.data.numOfPage))/curContent.length)*10000))/100 > 100 ? 100 : (Math.round(((dt.progress + Number(self.state.user.data.numOfPage))/curContent.length)*10000))/100;
               const msg = {
                 type: 2,
-                data: str.replace(/\s{2,}/g," "),
+                data: self.state.user.data.keepFormat ? str : str.replace(/\s{2,}/g," "),
                 progress: ps
               }
               window.services.sendMsg(ubWindow.webContents.id, msg);
@@ -642,7 +643,7 @@ export default class App extends React.Component {
               let ps = (Math.round(((dt.progress + Number(self.state.user.data.numOfPage))/curContent.length)*10000))/100 > 100 ? 100 : (Math.round(((dt.progress + Number(self.state.user.data.numOfPage))/curContent.length)*10000))/100;
               const msg = {
                 type: 2,
-                data: str.replace(/\s{2,}/g," "),
+                data: self.state.user.data.keepFormat ? str : str.replace(/\s{2,}/g," "),
                 progress: ps
               }
               window.services.sendMsg(ubWindow.webContents.id, msg);
@@ -667,7 +668,7 @@ export default class App extends React.Component {
   /****  章节划分  ****/
   getChapters = (str,cur) => {
     let self = this;
-    let reg = /(正文){0,1}(第)([零〇一二三四五六七八九十百千万a-zA-Z0-9]{1,7})[章节卷集部篇回]((?! {4}).)((?!\t{1,4}).){0,30}\r?\n/g;
+    let reg = /(正文){0,1}(第)([零〇一二三四五六七八九十百千万a-zA-Z0-9]{1,7})[章节卷篇回](\s+)((?! {4}).)((?!\t{1,4}).){0,30}\r?\n/g;
     let result = str.match(reg);
     let chapters = [];
     if (result && result.length > 0) {
@@ -844,7 +845,8 @@ export default class App extends React.Component {
       mouseType: 0,
       spacing: 0,
       spacingY: 1.2,
-      wheelType: 0
+      wheelType: 0,
+      keepFormat: false
     };
     config.data.x = window.screenLeft + 90;
     config.data.y = window.screenTop + 180;
@@ -879,7 +881,7 @@ export default class App extends React.Component {
     config.data[e.target.getAttribute('id')] = Number(val);
     this.setState({user : JSON.parse(JSON.stringify(config))});
   }
-  inputChange2 = (e) => {
+   inputChange2 = (e) => {
     let sc = this.state.search;
     sc[e.target.getAttribute('id')] = e.target.value;
     this.setState({search : JSON.parse(JSON.stringify(sc))});
@@ -922,6 +924,11 @@ export default class App extends React.Component {
   inputChange10 = (e) => {
     let config = this.state.user;
     config.data.fontFamily =  e.target.value;
+    this.setState({user : JSON.parse(JSON.stringify(config))});
+  }
+  inputChange11 = (e) => {
+    let config = this.state.user;
+    config.data.keepFormat = !config.data.keepFormat;
     this.setState({user : JSON.parse(JSON.stringify(config))});
   }
   inputBlur = (e) => {
@@ -1215,6 +1222,9 @@ export default class App extends React.Component {
                   <b style={{color:'#d25353'}}>设置-鼠标翻页、滚轮翻页</b> <br/> windows机器下，鼠标翻页和滚轮翻页基本上只能在固定窗口模式使用，linux未测试。 滚轮翻页只有鼠标光标在阅读窗口范围之内才能生效。
                 </Typography>
                 <Typography gutterBottom>
+                  <b style={{color:'#d25353'}}>设置-保留格式</b> <br/> 勾选此选项后，阅读窗口显示的文本会保留空格、换行。但是，每页显示字数是固定的，而每页空格换行数量是不确定的，所以可能会导致文字溢出窗口或者窗口还剩一大截未填充文字。大家根据自己的需求决定是否打开此开关。
+                </Typography>
+                <Typography gutterBottom>
                   <b style={{color:'#d25353'}}>设置-自动翻页</b> <br/> 单位：秒，设置为0即为关闭自动翻页。使用快捷键隐藏阅读窗口后自动翻页会自动停止，使用快捷键显示阅读窗口后自动翻页会自动恢复。
                 </Typography>
               </DialogContent>
@@ -1340,6 +1350,18 @@ export default class App extends React.Component {
                             <MenuItem value={ft.en} style={{fontFamily: "'" + ft.en + "'", minWidth: '9rem' }} >{ft.ch}</MenuItem>
                         ))}
                       </Select>
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="overline" display="block" >
+                      <span className='setting-label'>保留格式</span>
+                      <Switch
+                          checked={this.state.user.data.keepFormat}
+                          onChange={this.inputChange11}
+                          color="primary"
+                          name="keep-format"
+                          inputProps={{ 'aria-label': 'primary checkbox' }}
+                      />
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>

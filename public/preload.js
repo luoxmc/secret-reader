@@ -5,8 +5,8 @@ const jschardet = require("jschardet");
 const EPub = require("epub");
 const mobi = require("js-mobi/Mobi");
 window.services = {
-  /***  从本地txt文件读取小说内容  ***/
-  readBook: (dt,callback) => {
+  /***  从本地txt文件或utools数据库读取小说内容  ***/
+  readBook: (dt, format, callback) => {
     if(!dt || !dt.path){
       return;
     }
@@ -29,7 +29,6 @@ window.services = {
       }
     } else {
       buffer = fs.readFileSync(dt.path);
-      console.log(buffer)
     }
     if(!buffer || buffer.length <= 0){
       callback(null);
@@ -50,7 +49,7 @@ window.services = {
     } else {
       str = iconv.decode(buffer , 'utf-8');
     }
-    if(str){
+    if(str && !format){
       //去除字符串中多余的空格、换行、制表符等
       str = str.replace(/\t/g, "").replace(/[，]\s{2,}(?!第)/g, "，")
           .replace(/[。]\s{2,}(?!第)/g, "。").replace(/[？]\s{2,}(?!第)/g, "？")
@@ -161,11 +160,11 @@ window.services = {
         list.splice(0, 1);
         let allStr = '';
         list.forEach(function (ele,idx) {
-          let reg1 = /(第)([零〇一二三四五六七八九十百千万a-zA-Z0-9]{1,7})[章节卷集部篇回]/g;
+          let reg1 = /(第)([零〇一二三四五六七八九十百千万a-zA-Z0-9]{1,7})[章节卷篇回]/g;
           let result = ele.match(reg1);
           if (!result || result.length < 10) {
             let str = '';
-            let reg = /(第)([零〇一二三四五六七八九十百千万a-zA-Z0-9]{1,7})[章节卷集部篇回]((?!<).){0,30}/g;
+            let reg = /(第)([零〇一二三四五六七八九十百千万a-zA-Z0-9]{1,7})[章节卷篇回](\s+)((?!<).){0,30}/g;
             let title = ele.match(reg)
             if(title && title.length > 0){
               ele = ele.replace(reg,'');
@@ -261,7 +260,7 @@ window.services = {
         b.fillText(e, a / 2, i / 2);
         let k = b.getImageData(0, 0, a, i).data;
         return [].slice.call(k).filter(function(l) {
-          return l != 0
+          return l !== 0
         });
       };
       let bz = g(h).join("");
