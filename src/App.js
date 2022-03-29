@@ -106,7 +106,8 @@ export default class App extends React.Component {
         spacing: 0,
         spacingY: 1.2,
         wheelType: 0,
-        keepFormat: false
+        keepFormat: false,
+        hideType: 0
       },
       _rev : ''
     },
@@ -556,7 +557,6 @@ export default class App extends React.Component {
                     backgroundColor : '#00000000',
                     hasShadow : false,
                     webPreferences : {
-                      // devTools: true,
                       preload: 'bookPreload.js'
                     }
                   }, () => {
@@ -846,7 +846,8 @@ export default class App extends React.Component {
       spacing: 0,
       spacingY: 1.2,
       wheelType: 0,
-      keepFormat: false
+      keepFormat: false,
+      hideType: 0
     };
     config.data.x = window.screenLeft + 90;
     config.data.y = window.screenTop + 180;
@@ -929,6 +930,11 @@ export default class App extends React.Component {
   inputChange11 = (e) => {
     let config = this.state.user;
     config.data.keepFormat = !config.data.keepFormat;
+    this.setState({user : JSON.parse(JSON.stringify(config))});
+  }
+  inputChange12 = (e) => {
+    let config = this.state.user;
+    config.data.hideType =  e.target.value;
     this.setState({user : JSON.parse(JSON.stringify(config))});
   }
   inputBlur = (e) => {
@@ -1216,16 +1222,19 @@ export default class App extends React.Component {
                   <b style={{color:'#d25353'}}>设置-窗口移动</b> <br/> 此设置可以切换窗口移动模式和固定模式。ps：windows机器下开启窗口移动会导致鼠标翻页和滚轮翻页失效。ps2：移动模式下每5秒钟记录一次窗口位置，所以需要记忆窗口位置的话，请在窗口移动到所需位置后停留五秒钟再关闭窗口或者切换为固定模式。
                 </Typography>
                 <Typography gutterBottom>
-                  <b style={{color:'#d25353'}}>设置-快捷键</b> <br/> 快捷键只能在阅读窗口激活（focus）的情况下有效，该插件快捷键优先级很低，请避免与系统中其他快捷键冲突。
-                </Typography>
-                <Typography gutterBottom>
-                  <b style={{color:'#d25353'}}>设置-鼠标翻页、滚轮翻页</b> <br/> windows机器下，鼠标翻页和滚轮翻页基本上只能在固定窗口模式使用，linux未测试。 滚轮翻页只有鼠标光标在阅读窗口范围之内才能生效。
-                </Typography>
-                <Typography gutterBottom>
                   <b style={{color:'#d25353'}}>设置-保留格式</b> <br/> 勾选此选项后，阅读窗口显示的文本会保留空格、换行。但是，每页显示字数是固定的，而每页空格换行数量是不确定的，所以可能会导致文字溢出窗口或者窗口还剩一大截未填充文字。大家根据自己的需求决定是否打开此开关。
                 </Typography>
                 <Typography gutterBottom>
                   <b style={{color:'#d25353'}}>设置-自动翻页</b> <br/> 单位：秒，设置为0即为关闭自动翻页。使用快捷键隐藏阅读窗口后自动翻页会自动停止，使用快捷键显示阅读窗口后自动翻页会自动恢复。
+                </Typography>
+                <Typography gutterBottom>
+                  <b style={{color:'#d25353'}}>设置-快速隐藏</b> <br/> 鼠标移出阅读窗口自动隐藏阅读器，鼠标移回窗口区域自动显示阅读器。 如果你怕窗口隐藏后记不住窗口原来的位置，可以选择 "鼠标移出保留右下角百分比不隐藏" 选项， 这样就可以依靠右下角的百分比来大概估计窗口位置。
+                </Typography>
+                <Typography gutterBottom>
+                  <b style={{color:'#d25353'}}>设置-快捷键</b> <br/> 快捷键只能在阅读窗口激活（focus）的情况下有效，该插件快捷键优先级很低，请避免与系统中其他快捷键冲突。
+                </Typography>
+                <Typography gutterBottom>
+                  <b style={{color:'#d25353'}}>设置-鼠标翻页、滚轮翻页</b> <br/> windows机器下，鼠标翻页和滚轮翻页基本上只能在固定窗口模式使用，linux未测试。 滚轮翻页只有鼠标光标在阅读窗口范围之内才能生效。
                 </Typography>
               </DialogContent>
             </Dialog>
@@ -1370,6 +1379,16 @@ export default class App extends React.Component {
                       <Input value={this.state.user.data.autoPage} size="small" id='autoPage' inputProps={{ 'aria-label': 'description' }}
                              placeholder='单位:秒,0为不自动翻页' type='number'
                              onChange={(e) => this.inputChange(e,0,200)}/>
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="overline" display="block" >
+                      <span className='setting-label'>快速隐藏</span>
+                      <Select value={this.state.user.data.hideType} onChange={this.inputChange12} style={{maxWidth:'11.5rem',fontSize:'0.9rem'}}>
+                        <MenuItem value={0}>无需鼠标移出隐藏窗口</MenuItem>
+                        <MenuItem value={1}>鼠标移出完全隐藏窗口</MenuItem>
+                        <MenuItem value={2}>鼠标移出保留右下角百分比不隐藏</MenuItem>
+                      </Select>
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>

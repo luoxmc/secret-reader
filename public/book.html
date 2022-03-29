@@ -18,6 +18,10 @@
             user-select:none;
             white-space: pre-wrap;
         }
+        .luoxx-hide {
+            color: transparent !important;
+            background: transparent !important;
+        }
         #tips {
             position: fixed;
             top: 10%;
@@ -33,7 +37,7 @@
         }
         #percent {
             position: fixed;
-            right: 1.2rem;
+            right: 1rem;
             bottom: 2px;
         }
         #percent input{
@@ -94,6 +98,23 @@
                 document.removeEventListener("mousedown",mouseDown);
                 document.removeEventListener("mouseup",mousePage);
                 document.removeEventListener("wheel",wheelPage);
+                if (config.hideType !== 0) {
+                    //鼠标移出隐藏窗口，移入显示
+                    document.addEventListener('mouseleave', function () {
+                        $("#bookContent").addClass('luoxx-hide');
+                        if (config.hideType === 1 ) {
+                            $("#percent").addClass('luoxx-hide');
+                            $("#percent input").addClass('luoxx-hide');
+                        }
+                    });
+                    document.addEventListener('mouseenter', function () {
+                        $("#bookContent").removeClass('luoxx-hide');
+                        if (config.hideType === 1 ) {
+                            $("#percent").removeClass('luoxx-hide');
+                            $("#percent input").removeClass('luoxx-hide');
+                        }
+                    });
+                }
                 if(config.mouseType !== 0){
                     document.addEventListener("mousedown",mouseDown);
                     document.addEventListener("mouseup",mousePage);
