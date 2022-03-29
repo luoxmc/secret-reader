@@ -10,18 +10,20 @@
             height: 100%;
             overflow: hidden;
             padding: 2px 5px;
+            margin: 0;
             box-sizing: border-box;
             -webkit-user-select:none;
             -moz-user-select:none;
             -ms-user-select:none;
             user-select:none;
+            white-space: pre-wrap;
         }
         #tips {
             position: fixed;
             top: 10%;
             left: 22.5%;
             width: 55%;
-            background: rgba(255, 255, 255, 0.65);
+            background: rgba(255, 255, 255, 0.5);
             color: rgba(48, 49, 51, 0.95);
             border-radius: 5px;
             font-size: 11px;
@@ -31,7 +33,7 @@
         }
         #percent {
             position: fixed;
-            right: 2px;
+            right: 1.2rem;
             bottom: 2px;
         }
         #percent input{
@@ -51,7 +53,7 @@
     </style>
 </head>
 <body style="margin: 0;width: 100%;height: 100%;">
-    <div id="bookContent"></div>
+    <pre id="bookContent"></pre>
     <div style="display: none;position: fixed;width: 100%;height: 100%;left: 0; top: 0;-webkit-app-region: no-drag;" id="cover"></div>
     <div id="percent" style="-webkit-app-region: no-drag;"><input type="number" oninput="percentChange()" />%</div>
     <div id="tips" style="display: none;"></div>
@@ -79,6 +81,9 @@
                     $("#percent").css("font-family", "'" + config.fontFamily +  "'");
                     $("#percent input").css("font-family", "'" + config.fontFamily +  "'");
                     $("#tips").css("font-family", "'" + config.fontFamily +  "'");
+                }
+                if(config.keepFormat){
+                    $("#bookContent").css("overflow-y","auto");
                 }
                 $("#percent").css("color",config.fontColor).css("font-size",(config.fontSize-2) + 'px');
                 $("#percent input").css("font-size",(config.fontSize-2) + 'px');
@@ -114,6 +119,7 @@
                     },5000);
                 }
             } else if(res.type === 2 && res.data){
+                document.getElementById("bookContent").scrollTop = 0
                 //推送内容
                 $("#bookContent").html(res.data);
                 $("#percent input").val(res.progress);
@@ -123,10 +129,10 @@
                 let diffWidth = $("#bookContent")[0].scrollWidth - $("#bookContent").outerWidth();
                 if(diffHeight > 6 || diffWidth > 6) {
                     if($("#tips").is(':hidden')){
-                        $("#tips").text("内容已经溢出阅读窗口，请调整窗口大小或者到设置中调整每页字数").show();
+                        $("#tips").text(config.keepFormat ? "内容溢出阅读窗口，已开启滚动条" : "内容溢出阅读窗口，请调整窗口大小或到设置中调整每页字数").show();
                         setTimeout(function () {
                             $("#tips").hide();
-                        },2000);
+                        },1600);
                     }
                 }
             } else if (res.type === 7 && res.data){
