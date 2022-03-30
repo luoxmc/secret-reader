@@ -19,8 +19,9 @@
             white-space: pre-wrap;
         }
         .luoxx-hide {
-            color: transparent !important;
-            background: transparent !important;
+            color: #00000001 !important;
+            background: #00000001 !important;
+            overflow-y: hidden !important;
         }
         #tips {
             position: fixed;
@@ -73,7 +74,7 @@
 
         window.bookServices.receiveMsg(function (res){
             if(res.type === 1 && res.data){
-                //推送设置
+                //收到推送过来的设置内容，开始设置阅读窗口
                 config = res.data;
                 $("#bookContent").css("background",config.bgColor).css("color",config.fontColor)
                     .css("font-size",config.fontSize + 'px').css("letter-spacing",config.spacing + "px");
@@ -93,41 +94,41 @@
                 $("#percent input").css("font-size",(config.fontSize-2) + 'px');
                 $("#bookContent").css("-webkit-app-region",config.isMove ? "drag" : "no-drag");
                 $("#percent input").css("color",config.fontColor)
+                /*****  添加事件之前先移除事件，防止重复添加  *****/
+                //先移除键盘事件
                 document.removeEventListener('keydown',keyListen);
                 document.addEventListener('keydown', keyListen);
+                //先移除鼠标事件
                 document.removeEventListener("mousedown",mouseDown);
                 document.removeEventListener("mouseup",mousePage);
+                //先移除鼠标滚轮事件
                 document.removeEventListener("wheel",wheelPage);
-                if (config.hideType !== 0) {
-                    //鼠标移出隐藏窗口，移入显示
-                    document.addEventListener('mouseleave', function () {
-                        $("#bookContent").addClass('luoxx-hide');
-                        if (config.hideType === 1 ) {
-                            $("#percent").addClass('luoxx-hide');
-                            $("#percent input").addClass('luoxx-hide');
-                        }
-                    });
-                    document.addEventListener('mouseenter', function () {
-                        $("#bookContent").removeClass('luoxx-hide');
-                        if (config.hideType === 1 ) {
-                            $("#percent").removeClass('luoxx-hide');
-                            $("#percent input").removeClass('luoxx-hide');
-                        }
-                    });
-                }
+                //先移除鼠标切进切出事件
+                document.removeEventListener('mouseleave', hideMain);
+                document.removeEventListener('mouseenter', showMain);
+                //添加鼠标事件
                 if(config.mouseType !== 0){
                     document.addEventListener("mousedown",mouseDown);
                     document.addEventListener("mouseup",mousePage);
                 }
+                //添加鼠标滚轮事件
                 if(config.wheelType !== 0){
                     document.addEventListener("wheel",wheelPage);
                 }
+                //添加自动翻页定时器
                 if(config && config.autoPage && config.autoPage !== 0){
                     setPageInterval();
                 } else {
                     clearInterval(autoPageTimer);
                     autoPageTimer = null;
                 }
+                //添加鼠标切进切出事件
+                if (config.hideType !== 0) {
+                    //鼠标移出隐藏窗口，移入显示
+                    document.addEventListener('mouseleave', hideMain);
+                    document.addEventListener('mouseenter', showMain);
+                }
+                //窗口可移动模式下，定时记录位置和窗口大小
                 if(config.isMove){
                     setInterval(function (){
                         const nowLeft = window.screenLeft;
@@ -141,7 +142,7 @@
                 }
             } else if(res.type === 2 && res.data){
                 document.getElementById("bookContent").scrollTop = 0
-                //推送内容
+                //收到推送过来的内容，填充
                 $("#bookContent").html(res.data);
                 $("#percent input").val(res.progress);
                 $("#percent input").width("2px");
@@ -386,6 +387,23 @@
             }
         }
 
+        function hideMain () {
+            $("#bookContent").addClass('luoxx-hide');
+            if (config.hideType === 1 ) {
+                $("#percent").addClass('luoxx-hide');
+                $("#percent input").addClass('luoxx-hide');
+            }
+        }
+
+        function showMain () {
+            $("#bookContent").removeClass('luoxx-hide');
+            if (config.hideType === 1 ) {
+                $("#percent").removeClass('luoxx-hide');
+                $("#percent input").removeClass('luoxx-hide');
+            }
+        }
+
+        //设置自动翻页
         function setPageInterval(){
             clearInterval(autoPageTimer);
             autoPageTimer = setInterval(function (){
@@ -397,6 +415,7 @@
             }, config.autoPage * 1000 );
         }
 
+        //窗口大小或位置调整记录之
         function sendWindowData(){
             if(window.screenLeft <= 10 || window.screenLeft > 8000 || window.screenTop <= 10 || window.screenTop > 8000){
                 return;

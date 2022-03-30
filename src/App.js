@@ -930,6 +930,9 @@ export default class App extends React.Component {
   inputChange11 = (e) => {
     let config = this.state.user;
     config.data.keepFormat = !config.data.keepFormat;
+    if (config.data.keepFormat) {
+      config.data.wheelType = 0;
+    }
     this.setState({user : JSON.parse(JSON.stringify(config))});
   }
   inputChange12 = (e) => {
@@ -1222,13 +1225,13 @@ export default class App extends React.Component {
                   <b style={{color:'#d25353'}}>设置-窗口移动</b> <br/> 此设置可以切换窗口移动模式和固定模式。ps：windows机器下开启窗口移动会导致鼠标翻页和滚轮翻页失效。ps2：移动模式下每5秒钟记录一次窗口位置，所以需要记忆窗口位置的话，请在窗口移动到所需位置后停留五秒钟再关闭窗口或者切换为固定模式。
                 </Typography>
                 <Typography gutterBottom>
-                  <b style={{color:'#d25353'}}>设置-保留格式</b> <br/> 勾选此选项后，阅读窗口显示的文本会保留空格、换行。但是，每页显示字数是固定的，而每页空格换行数量是不确定的，所以可能会导致文字溢出窗口或者窗口还剩一大截未填充文字。大家根据自己的需求决定是否打开此开关。
+                  <b style={{color:'#d25353'}}>设置-保留格式</b> <br/> 勾选此选项后，阅读窗口显示的文本会保留空格、换行。但是，每页显示字数是固定的，而每页空格换行数量是不确定的，所以可能会导致文字溢出窗口或者窗口还剩一大截未填充文字。大家根据自己的需求决定是否打开此开关。ps：开启保留格式开关后，为了防止文本显示不全，当文字溢出时会显示滚动条。所以开启此开关后，鼠标滚轮翻页会自动关闭，防止冲突。 ps: windows系统如果遇到滚动条无法滚动的情况，请到设置中关闭"窗口移动"选项。
                 </Typography>
                 <Typography gutterBottom>
                   <b style={{color:'#d25353'}}>设置-自动翻页</b> <br/> 单位：秒，设置为0即为关闭自动翻页。使用快捷键隐藏阅读窗口后自动翻页会自动停止，使用快捷键显示阅读窗口后自动翻页会自动恢复。
                 </Typography>
                 <Typography gutterBottom>
-                  <b style={{color:'#d25353'}}>设置-快速隐藏</b> <br/> 鼠标移出阅读窗口自动隐藏阅读器，鼠标移回窗口区域自动显示阅读器。 如果你怕窗口隐藏后记不住窗口原来的位置，可以选择 "鼠标移出保留右下角百分比不隐藏" 选项， 这样就可以依靠右下角的百分比来大概估计窗口位置。
+                  <b style={{color:'#d25353'}}>设置-快速隐藏</b> <br/> 鼠标移出阅读窗口自动隐藏阅读器，鼠标移回窗口区域自动显示阅读器。 如果你怕窗口隐藏后记不住窗口原来的位置，可以选择 "鼠标移出保留右下角百分比不隐藏" 选项， 这样就可以依靠右下角的百分比来大概估计窗口位置。 ps: windows系统，如果遇到鼠标移出无法隐藏窗口的情况，请到设置中关闭"窗口移动"选项
                 </Typography>
                 <Typography gutterBottom>
                   <b style={{color:'#d25353'}}>设置-快捷键</b> <br/> 快捷键只能在阅读窗口激活（focus）的情况下有效，该插件快捷键优先级很低，请避免与系统中其他快捷键冲突。
