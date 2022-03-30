@@ -616,7 +616,7 @@ export default class App extends React.Component {
               let ps = (Math.round(((dt.progress + Number(self.state.user.data.numOfPage))/curContent.length)*10000))/100 > 100 ? 100 : (Math.round(((dt.progress + Number(self.state.user.data.numOfPage))/curContent.length)*10000))/100;
               const msg = {
                 type: 2,
-                data: self.state.user.data.keepFormat ? str : str.replace(/\s{2,}/g," "),
+                data: self.state.user.data.keepFormat ? str : str.replace(/\n/g," ").replace(/\s{2,}/g," "),
                 progress: ps
               }
               window.services.sendMsg(ubWindow.webContents.id, msg);
