@@ -271,6 +271,14 @@ window.services = {
       })
       resolve(result);
     });
+  },
+  /***  返回指定文件路径的buffer文件流  ***/
+  getBuffer : (path) => {
+    let buffer = fs.readFileSync(path);
+    if (buffer && buffer.length > 0) {
+      return buffer;
+    }
+    return null;
   }
 }
 

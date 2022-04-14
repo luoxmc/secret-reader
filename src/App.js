@@ -375,6 +375,46 @@ export default class App extends React.Component {
     self.state.search.hasMore = false;
     this.setState({search : JSON.parse(JSON.stringify(self.state.search))});
   }
+  /****  设置封面  ****/
+  setCover = (e,id) => {
+    e.stopPropagation();
+    let file = window.utools.showOpenDialog({
+      filters: [{ 'name': 'img', extensions: ['png','jpg','jpeg','bmp'] }],
+      properties: ['openFile']
+    })
+    if(file && file.length > 0){
+      let buffer = window.services.getBuffer(file[0]);
+      if(buffer && buffer.length > 0){
+        if (buffer.length <= 1024000) {
+          let self = this;
+          let coverId = self.state.deviceId + "/" + id + "/cover";
+          window.utools.db.remove(coverId);
+          window.utools.db.postAttachment( coverId , buffer, 'image/png');
+          this.state.list.data.forEach((dt, index) => {
+            if (dt && dt.id === id) {
+              dt.cover = coverId;
+              dt.showRight = false;
+              let covers = self.state.covers;
+              covers[id] = self.unit8ToCssBase64Png(buffer);
+              let res = window.utools.db.put(self.state.list);
+              if(res && res.ok) {
+                this.setState({list : JSON.parse(JSON.stringify(window.utools.db.get(self.state.deviceId + "/list"))),covers: covers});
+              }
+            }
+          })
+        } else {
+          this.closeRightMenu();
+          this.showTip("图片文件不能大于1M，请重新选择！");
+        }
+      } else {
+        this.closeRightMenu();
+        this.showTip("解析图片文件出错，请重新选择！");
+      }
+    } else {
+      console.log("user cancel");
+      this.closeRightMenu();
+    }
+  }
   /****  显示右键菜单  ****/
   showRightMenu = (e, bookId) => {
     let self = this;
@@ -1029,7 +1069,7 @@ export default class App extends React.Component {
         let covers = {};
         if(list.data.length > 0){
           list.data.forEach(function (oneBook){
-            if(oneBook.type && oneBook.type === 'epub' && oneBook.cover){
+            if(oneBook.cover){
               const buf = window.utools.db.getAttachment(oneBook.cover);
               if(buf){
                 covers[oneBook.id] = self.unit8ToCssBase64Png(buf);
@@ -1174,6 +1214,7 @@ export default class App extends React.Component {
                             <MenuList  >
                               <MenuItem onClick={(e)=>this.showSearch(e,value.id)}>搜索跳转</MenuItem>
                               <MenuItem onClick={(e)=>this.chaptersList(e,value.id)}>章节跳转</MenuItem>
+                              <MenuItem onClick={(e)=>this.setCover(e,value.id)}>设置封面</MenuItem>
                               <MenuItem onClick={(e)=>this.showDeleteConfirm(e,value.id)} style={{color:'#d25353'}}>删除小说</MenuItem>
                             </MenuList>
                           </ClickAwayListener>
