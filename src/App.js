@@ -107,7 +107,8 @@ export default class App extends React.Component {
         spacingY: 1.2,
         wheelType: 0,
         keepFormat: false,
-        hideType: 0
+        hideType: 0,
+        showPercent: true
       },
       _rev : ''
     },
@@ -887,7 +888,8 @@ export default class App extends React.Component {
       spacingY: 1.2,
       wheelType: 0,
       keepFormat: false,
-      hideType: 0
+      hideType: 0,
+      showPercent: true
     };
     config.data.x = window.screenLeft + 90;
     config.data.y = window.screenTop + 180;
@@ -911,14 +913,9 @@ export default class App extends React.Component {
     this.closeSetting();
   }
   /****  输入框修改  ****/
-  inputChange = (e,min,max) => {
+  inputChange = (e) => {
     let config = this.state.user;
     let val = e.target.value.toString().replace('+','').replace('e','');
-    if(max !== null && val > max){
-      val = max;
-    } else if (min !== null && val < min){
-      val = min;
-    }
     config.data[e.target.getAttribute('id')] = Number(val);
     this.setState({user : JSON.parse(JSON.stringify(config))});
   }
@@ -980,8 +977,24 @@ export default class App extends React.Component {
     config.data.hideType =  e.target.value;
     this.setState({user : JSON.parse(JSON.stringify(config))});
   }
+  inputChange13 = (e) => {
+    let config = this.state.user;
+    config.data.showPercent = !config.data.showPercent;
+    this.setState({user : JSON.parse(JSON.stringify(config))});
+  }
   inputBlur = (e) => {
     document.removeEventListener('keydown', this.keyFunc);
+  }
+  inputBlur2 = (e,min,max) => {
+    let config = this.state.user;
+    let val = e.target.value.toString().replace('+','').replace('e','');
+    if(max !== null && val > max){
+      val = max;
+    } else if (min !== null && val < min){
+      val = min;
+    }
+    config.data[e.target.getAttribute('id')] = Number(val);
+    this.setState({user : JSON.parse(JSON.stringify(config))});
   }
   keyFunc = (e) => {
     let ctrl = e.ctrlKey,shift = e.shiftKey,alt = e.altKey,meta = e.metaKey;
@@ -1364,22 +1377,22 @@ export default class App extends React.Component {
                   <Grid item xs={12} sm={6}>
                     <Typography variant="overline" display="block" >
                       <span className='setting-label'>字体大小</span>
-                      <Input value={this.state.user.data.fontSize} size="small" id='fontSize' inputProps={{ 'aria-label': 'description' }}
-                             type='number' onChange={(e) => this.inputChange(e,10,28)}/>
+                      <Input value={this.state.user.data.fontSize} size="small" id='fontSize' inputProps={{ 'aria-label': 'description' }} onChange={this.inputChange}
+                             type='number' onBlur={(e) => this.inputBlur2(e,10,28)}/>
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="overline" display="block" >
                       <span className='setting-label'>每页字数</span>
-                      <Input value={this.state.user.data.numOfPage} size="small" id='numOfPage' inputProps={{ 'aria-label': 'description' }}
-                             type='number' onChange={(e) => this.inputChange(e,0,10000)}/>
+                      <Input value={this.state.user.data.numOfPage} size="small" id='numOfPage' inputProps={{ 'aria-label': 'description' }} onChange={this.inputChange}
+                             type='number' onBlur={(e) => this.inputBlur2(e,0,10000)}/>
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="overline" display="block" >
                       <span className='setting-label'>文字间距</span>
                       <Input value={this.state.user.data.spacing} size="small" id='spacing' inputProps={{ 'aria-label': 'description' }} placeholder='范围：-2到15' type='number'
-                             onChange={(e) => this.inputChange(e,-2,15)}/>
+                             onBlur={(e) => this.inputBlur2(e,-2,15)}  onChange={this.inputChange}/>
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1421,8 +1434,8 @@ export default class App extends React.Component {
                     <Typography variant="overline" display="block" >
                       <span className='setting-label'>自动翻页</span>
                       <Input value={this.state.user.data.autoPage} size="small" id='autoPage' inputProps={{ 'aria-label': 'description' }}
-                             placeholder='单位:秒,0为不自动翻页' type='number'
-                             onChange={(e) => this.inputChange(e,0,200)}/>
+                             placeholder='单位:秒,0为不自动翻页' type='number'  onChange={this.inputChange}
+                             onBlur={(e) => this.inputBlur2(e,0,200)}/>
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1469,6 +1482,32 @@ export default class App extends React.Component {
                         <MenuItem value={1}>上一页:向上;下一页:向下;</MenuItem>
                         <MenuItem value={2}>上一页:向下;下一页:向上;</MenuItem>
                       </Select>
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6} hidden={!window.platform.isMacOs}>
+                    <Typography variant="overline" display="block" >
+                      <span className='setting-label'>窗口宽度</span>
+                      <Input value={this.state.user.data.winWidth} size="small" id='winWidth' inputProps={{ 'aria-label': 'description' }}  onChange={this.inputChange}
+                             type='number' onBlur={(e) => this.inputBlur2(e,10,5000)}/>
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6} hidden={!window.platform.isMacOs}>
+                    <Typography variant="overline" display="block" >
+                      <span className='setting-label'>窗口高度</span>
+                      <Input value={this.state.user.data.winHeight} size="small" id='winHeight' inputProps={{ 'aria-label': 'description' }}  onChange={this.inputChange}
+                             type='number' onBlur={(e) => this.inputBlur2(e,10,5000)}/>
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="overline" display="block" >
+                      <span className='setting-label'>展示百分比</span>
+                      <Switch
+                          checked={this.state.user.data.showPercent}
+                          onChange={this.inputChange13}
+                          color="primary"
+                          name="show-percent"
+                          inputProps={{ 'aria-label': 'primary checkbox' }}
+                      />
                     </Typography>
                   </Grid>
                 </Grid>

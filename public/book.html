@@ -110,6 +110,11 @@
                 $("#percent input").css("font-size",(config.fontSize-2) + 'px');
                 $("#bookContent").css("-webkit-app-region",config.isMove ? "drag" : "no-drag");
                 $("#percent input").css("color",config.fontColor)
+                if (!config.showPercent) {
+                    $("#percent").hide();
+                } else {
+                    $("#percent").show();
+                }
                 /*****  添加事件之前先移除事件，防止重复添加  *****/
                 //先移除键盘事件
                 document.removeEventListener('keydown',keyListen);
