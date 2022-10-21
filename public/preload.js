@@ -28,38 +28,41 @@ window.services = {
         return;
       }
     } else {
-      buffer = fs.readFileSync(dt.path);
+      if(window.services.checkFile(dt.path)){
+        buffer = fs.readFileSync(dt.path);
+      }
     }
     if(!buffer || buffer.length <= 0){
       callback(null);
-    }
-    //使用jschardet检查文件编码
-    let encodingCheck = {};
-    if(buffer.byteLength > 2500){
-      let tmpBuffer = new Buffer(2500);
-      buffer.copy(tmpBuffer,0,0,2500);
-      encodingCheck = jschardet.detect(tmpBuffer);
-      tmpBuffer = null;
     } else {
-      encodingCheck = jschardet.detect(buffer);
+      //使用jschardet检查文件编码
+      let encodingCheck = {};
+      if(buffer.byteLength > 2500){
+        let tmpBuffer = new Buffer(2500);
+        buffer.copy(tmpBuffer,0,0,2500);
+        encodingCheck = jschardet.detect(tmpBuffer);
+        tmpBuffer = null;
+      } else {
+        encodingCheck = jschardet.detect(buffer);
+      }
+      //用检查出来的编码将buffer转成字符串
+      if(encodingCheck.confidence > 0.45){
+        str = iconv.decode(buffer , encodingCheck.encoding);
+      } else {
+        str = iconv.decode(buffer , 'utf-8');
+      }
+      if(str && !format){
+        //去除字符串中多余的空格、换行、制表符等
+        str = str.replace(/\t/g, "").replace(/[，]\s{2,}(?!第)/g, "，")
+            .replace(/[。]\s{2,}(?!第)/g, "。").replace(/[？]\s{2,}(?!第)/g, "？")
+            .replace(/[！]\s{2,}(?!第)/g, "！").replace(/[,]\s{2,}(?!第)/g, ",")
+            .replace(/[.]\s{2,}(?!第)/g, ".").replace(/[?]\s{2,}(?!第)/g, "?")
+            .replace(/[!]\s{2,}(?!第)/g, "!").replace(/["]\s{2,}(?!第)/g,'"')
+            .replace(/[”]\s{2,}(?!第)/g,'”').replace(/[……]\s{2,}(?!第)/g,'……')
+            .replace(/\n\n\n/g,"\n").replace(/\n\n/g,"\n");
+      }
+      callback(str);
     }
-    //用检查出来的编码将buffer转成字符串
-    if(encodingCheck.confidence > 0.45){
-      str = iconv.decode(buffer , encodingCheck.encoding);
-    } else {
-      str = iconv.decode(buffer , 'utf-8');
-    }
-    if(str && !format){
-      //去除字符串中多余的空格、换行、制表符等
-      str = str.replace(/\t/g, "").replace(/[，]\s{2,}(?!第)/g, "，")
-          .replace(/[。]\s{2,}(?!第)/g, "。").replace(/[？]\s{2,}(?!第)/g, "？")
-          .replace(/[！]\s{2,}(?!第)/g, "！").replace(/[,]\s{2,}(?!第)/g, ",")
-          .replace(/[.]\s{2,}(?!第)/g, ".").replace(/[?]\s{2,}(?!第)/g, "?")
-          .replace(/[!]\s{2,}(?!第)/g, "!").replace(/["]\s{2,}(?!第)/g,'"')
-          .replace(/[”]\s{2,}(?!第)/g,'”').replace(/[……]\s{2,}(?!第)/g,'……')
-          .replace(/\n\n/g,"");
-    }
-    callback(str);
   },
   /***  获取epub书籍的内容封面等信息  ***/
   getEpubInfo : (path,callback) => {

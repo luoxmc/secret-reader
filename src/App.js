@@ -350,18 +350,25 @@ export default class App extends React.Component {
     e.stopPropagation();
     this.closeRightMenu();
     let self = this;
-    self.state.search.show = true;
-    self.state.search.bookId = id;
     self.state.list.data.forEach(function(dt) {
       if (dt && dt.id === id) {
-        let name = dt.name.replace(/《/g,'').replace(/》/g,'');
-        if(name.length > 8){
-          name = name.substring(0,8) + '...';
+        if (dt.type && dt.type === 'txt' && !window.services.checkFile(dt.path)) {
+          self.showTip("该路径下文件已不存在或不可读");
+        } else {
+          let name = dt.name.replace(/《/g,'').replace(/》/g,'');
+          if(name.length > 8){
+            name = name.substring(0,8) + '...';
+          }
+          name = '《' + name + '》';
+          self.state.search.bookName = name;
         }
-        name = '《' + name + '》';
-        self.state.search.bookName = name;
       }
     })
+    if (!self.state.search.bookName) {
+      return
+    }
+    self.state.search.show = true;
+    self.state.search.bookId = id;
     self.state.search.noResultStr = '输入关键字后回车或者点击搜索图标开始搜索';
     this.setState({search : JSON.parse(JSON.stringify(self.state.search))});
   }
@@ -657,7 +664,7 @@ export default class App extends React.Component {
               let ps = (Math.round(((dt.progress + Number(self.state.user.data.numOfPage))/curContent.length)*10000))/100 > 100 ? 100 : (Math.round(((dt.progress + Number(self.state.user.data.numOfPage))/curContent.length)*10000))/100;
               const msg = {
                 type: 2,
-                data: self.state.user.data.keepFormat ? str : str.replace(/\n/g," ").replace(/\s{2,}/g," "),
+                data: self.state.user.data.keepFormat ? str : str.replace(/\n|\r/g," ").replace(/\s{2,}/g," "),
                 progress: ps
               }
               window.services.sendMsg(ubWindow.webContents.id, msg);
@@ -684,7 +691,7 @@ export default class App extends React.Component {
               let ps = (Math.round(((dt.progress + Number(self.state.user.data.numOfPage))/curContent.length)*10000))/100 > 100 ? 100 : (Math.round(((dt.progress + Number(self.state.user.data.numOfPage))/curContent.length)*10000))/100;
               const msg = {
                 type: 2,
-                data: self.state.user.data.keepFormat ? str : str.replace(/\s{2,}/g," "),
+                data: self.state.user.data.keepFormat ? str : str.replace(/\n|\r/g," ").replace(/\s{2,}/g," "),
                 progress: ps
               }
               window.services.sendMsg(ubWindow.webContents.id, msg);
@@ -1261,7 +1268,7 @@ export default class App extends React.Component {
                   <b style={{color:'#d25353'}}>如何设置老板键</b> <br/> 老板键用于快速关闭或隐藏阅读窗口，使用方法：在"utools-偏好设置-全局快捷键"栏目添加快捷键，关键字填入close-fish-book即可快速关闭，关键字填入toggle-show-fish-book即可快速显示/隐藏阅读窗口，关键字填入toggle-auto-page即可快速启动/暂停自动翻页（仅当自动翻页开关打开的情况下）。
                 </Typography>
                 <Typography gutterBottom>
-                  <b style={{color:'#d25353'}}>右键菜单</b> <br/> 在书籍封面上鼠标右键，即可展示对该书籍相关操作的右键菜单，右键菜单包含'搜索跳转'、'章节跳转'、'删除书籍'三个子菜单。
+                  <b style={{color:'#d25353'}}>右键菜单</b> <br/> 在书籍封面上鼠标右键，即可展示对该书籍相关操作的右键菜单，右键菜单包含'搜索跳转'、'章节跳转'、'删除书籍'、'设置封面' 四个子菜单。
                 </Typography>
                 <Typography gutterBottom>
                   <b style={{color:'#d25353'}}>章节跳转</b> <br/> 章节分割是按照"第*章、第*卷、第*回"等格式来切分的，兼容大部分网站下载的txt书籍。若提示"未检索到章节列表....."，请检查内容格式是否满足要求，不满足则无法使用章节跳转。可以使用搜索跳转来定位当前阅读进度。
