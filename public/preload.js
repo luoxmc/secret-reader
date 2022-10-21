@@ -53,12 +53,12 @@ window.services = {
       }
       if(str && !format){
         //去除字符串中多余的空格、换行、制表符等
-        str = str.replace(/\t/g, "").replace(/[，]\s{2,}(?!第)/g, "，")
-            .replace(/[。]\s{2,}(?!第)/g, "。").replace(/[？]\s{2,}(?!第)/g, "？")
-            .replace(/[！]\s{2,}(?!第)/g, "！").replace(/[,]\s{2,}(?!第)/g, ",")
-            .replace(/[.]\s{2,}(?!第)/g, ".").replace(/[?]\s{2,}(?!第)/g, "?")
-            .replace(/[!]\s{2,}(?!第)/g, "!").replace(/["]\s{2,}(?!第)/g,'"')
-            .replace(/[”]\s{2,}(?!第)/g,'”').replace(/[……]\s{2,}(?!第)/g,'……')
+        str = str.replace(/\t/g, "").replace(/[，]\s{2,}(?!第)/g, "， ")
+            .replace(/[。]\s{2,}(?!第)/g, "。 ").replace(/[？]\s{2,}(?!第)/g, "？ ")
+            .replace(/[！]\s{2,}(?!第)/g, "！ ").replace(/[,]\s{2,}(?!第)/g, ", ")
+            .replace(/[.]\s{2,}(?!第)/g, ". ").replace(/[?]\s{2,}(?!第)/g, "? ")
+            .replace(/[!]\s{2,}(?!第)/g, "! ").replace(/["]\s{2,}(?!第)/g,'" ')
+            .replace(/[”]\s{2,}(?!第)/g,'” ').replace(/[……]\s{2,}(?!第)/g,'…… ')
             .replace(/\n\n\n/g,"\n").replace(/\n\n/g,"\n");
       }
       callback(str);
