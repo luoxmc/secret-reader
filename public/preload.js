@@ -163,11 +163,11 @@ window.services = {
         list.splice(0, 1);
         let allStr = '';
         list.forEach(function (ele,idx) {
-          let reg1 = /(第)([零〇一二三四五六七八九十百千万a-zA-Z0-9]{1,7})[章节卷篇回]/g;
+          let reg1 = /(第)([零〇一二三四五六七八九十壹贰叁肆伍陆柒捌玖拾两百千万a-zA-Z0-9]{1,7})[章节卷篇回]/g;
           let result = ele.match(reg1);
           if (!result || result.length < 10) {
             let str = '';
-            let reg = /(第)([零〇一二三四五六七八九十百千万a-zA-Z0-9]{1,7})[章节卷篇回](\s+)((?!<).){0,30}/g;
+            let reg = /(第)([零〇一二三四五六七八九十壹贰叁肆伍陆柒捌玖拾两百千万a-zA-Z0-9]{1,7})[章节卷篇回](\s+)((?!<).){0,30}/g;
             let title = ele.match(reg)
             if(title && title.length > 0){
               ele = ele.replace(reg,'');

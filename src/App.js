@@ -716,7 +716,7 @@ export default class App extends React.Component {
   /****  章节划分  ****/
   getChapters = (str,cur) => {
     let self = this;
-    let reg = /(正文){0,1}(第)([零〇一二三四五六七八九十百千万a-zA-Z0-9]{1,7})[章节卷篇回](\s+)((?! {4}).)((?!\t{1,4}).){0,30}\r?\n/g;
+    let reg = /(正文){0,1}(第)([零〇一二三四五六七八九十壹贰叁肆伍陆柒捌玖拾两百千万a-zA-Z0-9]{1,7})[章节卷篇回](\s+)((?! {4}).)((?!\t{1,4}).){0,30}\r?\n/g;
     let result = str.match(reg);
     let chapters = [];
     if (result && result.length > 0) {

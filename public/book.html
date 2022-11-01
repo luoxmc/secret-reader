@@ -161,6 +161,12 @@
                         }
                     },5000);
                 }
+                //窗口失去焦点时，若百分比输入框是激活状态，则让它失去焦点，解决windows系统下输入框激活状态显示错误的问题
+                $(window).blur(function(){
+                    if (document.activeElement.tagName === 'INPUT') {
+                        $("#percent input").blur();
+                    }
+                });
             } else if(res.type === 2 && res.data){
                 document.getElementById("bookContent").scrollTop = 0
                 //收到推送过来的内容，填充
