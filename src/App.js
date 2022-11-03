@@ -107,7 +107,8 @@ export default class App extends React.Component {
         spacingY: 1.2,
         wheelType: 0,
         keepFormat: false,
-        hideType: 0
+        hideType: 0,
+        showPercent: true
       },
       _rev : ''
     },
@@ -349,18 +350,25 @@ export default class App extends React.Component {
     e.stopPropagation();
     this.closeRightMenu();
     let self = this;
-    self.state.search.show = true;
-    self.state.search.bookId = id;
     self.state.list.data.forEach(function(dt) {
       if (dt && dt.id === id) {
-        let name = dt.name.replace(/《/g,'').replace(/》/g,'');
-        if(name.length > 8){
-          name = name.substring(0,8) + '...';
+        if (dt.type && dt.type === 'txt' && !window.services.checkFile(dt.path)) {
+          self.showTip("该路径下文件已不存在或不可读");
+        } else {
+          let name = dt.name.replace(/《/g,'').replace(/》/g,'');
+          if(name.length > 8){
+            name = name.substring(0,8) + '...';
+          }
+          name = '《' + name + '》';
+          self.state.search.bookName = name;
         }
-        name = '《' + name + '》';
-        self.state.search.bookName = name;
       }
     })
+    if (!self.state.search.bookName) {
+      return
+    }
+    self.state.search.show = true;
+    self.state.search.bookId = id;
     self.state.search.noResultStr = '输入关键字后回车或者点击搜索图标开始搜索';
     this.setState({search : JSON.parse(JSON.stringify(self.state.search))});
   }
@@ -374,6 +382,46 @@ export default class App extends React.Component {
     self.state.search.keywords = '';
     self.state.search.hasMore = false;
     this.setState({search : JSON.parse(JSON.stringify(self.state.search))});
+  }
+  /****  设置封面  ****/
+  setCover = (e,id) => {
+    e.stopPropagation();
+    let file = window.utools.showOpenDialog({
+      filters: [{ 'name': 'img', extensions: ['png','jpg','jpeg','bmp'] }],
+      properties: ['openFile']
+    })
+    if(file && file.length > 0){
+      let buffer = window.services.getBuffer(file[0]);
+      if(buffer && buffer.length > 0){
+        if (buffer.length <= 1024000) {
+          let self = this;
+          let coverId = self.state.deviceId + "/" + id + "/cover";
+          window.utools.db.remove(coverId);
+          window.utools.db.postAttachment( coverId , buffer, 'image/png');
+          this.state.list.data.forEach((dt, index) => {
+            if (dt && dt.id === id) {
+              dt.cover = coverId;
+              dt.showRight = false;
+              let covers = self.state.covers;
+              covers[id] = self.unit8ToCssBase64Png(buffer);
+              let res = window.utools.db.put(self.state.list);
+              if(res && res.ok) {
+                this.setState({list : JSON.parse(JSON.stringify(window.utools.db.get(self.state.deviceId + "/list"))),covers: covers});
+              }
+            }
+          })
+        } else {
+          this.closeRightMenu();
+          this.showTip("图片文件不能大于1M，请重新选择！");
+        }
+      } else {
+        this.closeRightMenu();
+        this.showTip("解析图片文件出错，请重新选择！");
+      }
+    } else {
+      console.log("user cancel");
+      this.closeRightMenu();
+    }
   }
   /****  显示右键菜单  ****/
   showRightMenu = (e, bookId) => {
@@ -616,7 +664,7 @@ export default class App extends React.Component {
               let ps = (Math.round(((dt.progress + Number(self.state.user.data.numOfPage))/curContent.length)*10000))/100 > 100 ? 100 : (Math.round(((dt.progress + Number(self.state.user.data.numOfPage))/curContent.length)*10000))/100;
               const msg = {
                 type: 2,
-                data: self.state.user.data.keepFormat ? str : str.replace(/\n/g," ").replace(/\s{2,}/g," "),
+                data: self.state.user.data.keepFormat ? str : str.replace(/\n|\r/g," ").replace(/\s{2,}/g," "),
                 progress: ps
               }
               window.services.sendMsg(ubWindow.webContents.id, msg);
@@ -643,7 +691,7 @@ export default class App extends React.Component {
               let ps = (Math.round(((dt.progress + Number(self.state.user.data.numOfPage))/curContent.length)*10000))/100 > 100 ? 100 : (Math.round(((dt.progress + Number(self.state.user.data.numOfPage))/curContent.length)*10000))/100;
               const msg = {
                 type: 2,
-                data: self.state.user.data.keepFormat ? str : str.replace(/\s{2,}/g," "),
+                data: self.state.user.data.keepFormat ? str : str.replace(/\n|\r/g," ").replace(/\s{2,}/g," "),
                 progress: ps
               }
               window.services.sendMsg(ubWindow.webContents.id, msg);
@@ -668,7 +716,7 @@ export default class App extends React.Component {
   /****  章节划分  ****/
   getChapters = (str,cur) => {
     let self = this;
-    let reg = /(正文){0,1}(第)([零〇一二三四五六七八九十百千万a-zA-Z0-9]{1,7})[章节卷篇回](\s+)((?! {4}).)((?!\t{1,4}).){0,30}\r?\n/g;
+    let reg = /(正文){0,1}(第)([零〇一二三四五六七八九十壹贰叁肆伍陆柒捌玖拾两百千万a-zA-Z0-9]{1,7})[章节卷篇回](\s+)((?! {4}).)((?!\t{1,4}).){0,30}\r?\n/g;
     let result = str.match(reg);
     let chapters = [];
     if (result && result.length > 0) {
@@ -847,7 +895,8 @@ export default class App extends React.Component {
       spacingY: 1.2,
       wheelType: 0,
       keepFormat: false,
-      hideType: 0
+      hideType: 0,
+      showPercent: true
     };
     config.data.x = window.screenLeft + 90;
     config.data.y = window.screenTop + 180;
@@ -871,14 +920,9 @@ export default class App extends React.Component {
     this.closeSetting();
   }
   /****  输入框修改  ****/
-  inputChange = (e,min,max) => {
+  inputChange = (e) => {
     let config = this.state.user;
     let val = e.target.value.toString().replace('+','').replace('e','');
-    if(max !== null && val > max){
-      val = max;
-    } else if (min !== null && val < min){
-      val = min;
-    }
     config.data[e.target.getAttribute('id')] = Number(val);
     this.setState({user : JSON.parse(JSON.stringify(config))});
   }
@@ -940,8 +984,24 @@ export default class App extends React.Component {
     config.data.hideType =  e.target.value;
     this.setState({user : JSON.parse(JSON.stringify(config))});
   }
+  inputChange13 = (e) => {
+    let config = this.state.user;
+    config.data.showPercent = !config.data.showPercent;
+    this.setState({user : JSON.parse(JSON.stringify(config))});
+  }
   inputBlur = (e) => {
     document.removeEventListener('keydown', this.keyFunc);
+  }
+  inputBlur2 = (e,min,max) => {
+    let config = this.state.user;
+    let val = e.target.value.toString().replace('+','').replace('e','');
+    if(max !== null && val > max){
+      val = max;
+    } else if (min !== null && val < min){
+      val = min;
+    }
+    config.data[e.target.getAttribute('id')] = Number(val);
+    this.setState({user : JSON.parse(JSON.stringify(config))});
   }
   keyFunc = (e) => {
     let ctrl = e.ctrlKey,shift = e.shiftKey,alt = e.altKey,meta = e.metaKey;
@@ -1033,7 +1093,7 @@ export default class App extends React.Component {
         let covers = {};
         if(list.data.length > 0){
           list.data.forEach(function (oneBook){
-            if(oneBook.type && oneBook.type === 'epub' && oneBook.cover){
+            if(oneBook.cover){
               const buf = window.utools.db.getAttachment(oneBook.cover);
               if(buf){
                 covers[oneBook.id] = self.unit8ToCssBase64Png(buf);
@@ -1178,6 +1238,7 @@ export default class App extends React.Component {
                             <MenuList  >
                               <MenuItem onClick={(e)=>this.showSearch(e,value.id)}>搜索跳转</MenuItem>
                               <MenuItem onClick={(e)=>this.chaptersList(e,value.id)}>章节跳转</MenuItem>
+                              <MenuItem onClick={(e)=>this.setCover(e,value.id)}>设置封面</MenuItem>
                               <MenuItem onClick={(e)=>this.showDeleteConfirm(e,value.id)} style={{color:'#d25353'}}>删除小说</MenuItem>
                             </MenuList>
                           </ClickAwayListener>
@@ -1211,7 +1272,7 @@ export default class App extends React.Component {
                   <b style={{color:'#d25353'}}>如何设置老板键</b> <br/> 老板键用于快速关闭或隐藏阅读窗口，使用方法：在"utools-偏好设置-全局快捷键"栏目添加快捷键，关键字填入close-fish-book即可快速关闭，关键字填入toggle-show-fish-book即可快速显示/隐藏阅读窗口，关键字填入toggle-auto-page即可快速启动/暂停自动翻页（仅当自动翻页开关打开的情况下）。
                 </Typography>
                 <Typography gutterBottom>
-                  <b style={{color:'#d25353'}}>右键菜单</b> <br/> 在书籍封面上鼠标右键，即可展示对该书籍相关操作的右键菜单，右键菜单包含'搜索跳转'、'章节跳转'、'删除书籍'三个子菜单。
+                  <b style={{color:'#d25353'}}>右键菜单</b> <br/> 在书籍封面上鼠标右键，即可展示对该书籍相关操作的右键菜单，右键菜单包含'搜索跳转'、'章节跳转'、'删除书籍'、'设置封面' 四个子菜单。
                 </Typography>
                 <Typography gutterBottom>
                   <b style={{color:'#d25353'}}>章节跳转</b> <br/> 章节分割是按照"第*章、第*卷、第*回"等格式来切分的，兼容大部分网站下载的txt书籍。若提示"未检索到章节列表....."，请检查内容格式是否满足要求，不满足则无法使用章节跳转。可以使用搜索跳转来定位当前阅读进度。
@@ -1327,22 +1388,22 @@ export default class App extends React.Component {
                   <Grid item xs={12} sm={6}>
                     <Typography variant="overline" display="block" >
                       <span className='setting-label'>字体大小</span>
-                      <Input value={this.state.user.data.fontSize} size="small" id='fontSize' inputProps={{ 'aria-label': 'description' }}
-                             type='number' onChange={(e) => this.inputChange(e,10,28)}/>
+                      <Input value={this.state.user.data.fontSize} size="small" id='fontSize' inputProps={{ 'aria-label': 'description' }} onChange={this.inputChange}
+                             type='number' onBlur={(e) => this.inputBlur2(e,10,28)}/>
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="overline" display="block" >
                       <span className='setting-label'>每页字数</span>
-                      <Input value={this.state.user.data.numOfPage} size="small" id='numOfPage' inputProps={{ 'aria-label': 'description' }}
-                             type='number' onChange={(e) => this.inputChange(e,0,10000)}/>
+                      <Input value={this.state.user.data.numOfPage} size="small" id='numOfPage' inputProps={{ 'aria-label': 'description' }} onChange={this.inputChange}
+                             type='number' onBlur={(e) => this.inputBlur2(e,0,10000)}/>
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="overline" display="block" >
                       <span className='setting-label'>文字间距</span>
                       <Input value={this.state.user.data.spacing} size="small" id='spacing' inputProps={{ 'aria-label': 'description' }} placeholder='范围：-2到15' type='number'
-                             onChange={(e) => this.inputChange(e,-2,15)}/>
+                             onBlur={(e) => this.inputBlur2(e,-2,15)}  onChange={this.inputChange}/>
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1384,8 +1445,8 @@ export default class App extends React.Component {
                     <Typography variant="overline" display="block" >
                       <span className='setting-label'>自动翻页</span>
                       <Input value={this.state.user.data.autoPage} size="small" id='autoPage' inputProps={{ 'aria-label': 'description' }}
-                             placeholder='单位:秒,0为不自动翻页' type='number'
-                             onChange={(e) => this.inputChange(e,0,200)}/>
+                             placeholder='单位:秒,0为不自动翻页' type='number'  onChange={this.inputChange}
+                             onBlur={(e) => this.inputBlur2(e,0,200)}/>
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1432,6 +1493,32 @@ export default class App extends React.Component {
                         <MenuItem value={1}>上一页:向上;下一页:向下;</MenuItem>
                         <MenuItem value={2}>上一页:向下;下一页:向上;</MenuItem>
                       </Select>
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6} hidden={!window.platform.isMacOs}>
+                    <Typography variant="overline" display="block" >
+                      <span className='setting-label'>窗口宽度</span>
+                      <Input value={this.state.user.data.winWidth} size="small" id='winWidth' inputProps={{ 'aria-label': 'description' }}  onChange={this.inputChange}
+                             type='number' onBlur={(e) => this.inputBlur2(e,10,5000)}/>
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6} hidden={!window.platform.isMacOs}>
+                    <Typography variant="overline" display="block" >
+                      <span className='setting-label'>窗口高度</span>
+                      <Input value={this.state.user.data.winHeight} size="small" id='winHeight' inputProps={{ 'aria-label': 'description' }}  onChange={this.inputChange}
+                             type='number' onBlur={(e) => this.inputBlur2(e,10,5000)}/>
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="overline" display="block" >
+                      <span className='setting-label'>展示百分比</span>
+                      <Switch
+                          checked={this.state.user.data.showPercent}
+                          onChange={this.inputChange13}
+                          color="primary"
+                          name="show-percent"
+                          inputProps={{ 'aria-label': 'primary checkbox' }}
+                      />
                     </Typography>
                   </Grid>
                 </Grid>
