@@ -992,14 +992,18 @@ export default class App extends React.Component {
               data: "hide"
             }
             window.services.sendMsg(ubWindow.webContents.id, msg);
-            ubWindow.hide();
+            setTimeout(function (){
+              ubWindow.hide();
+            },0)
           } else {
             const msg = {
               type: 7,
               data: "show"
             }
             window.services.sendMsg(ubWindow.webContents.id, msg);
-            ubWindow.show();
+            setTimeout(function (){
+              ubWindow.show();
+            },0)
           }
         }
         window.utools.hideMainWindow();

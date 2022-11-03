@@ -60,7 +60,7 @@
 <body style="margin: 0;width: 100%;height: 100%;">
     <pre id="bookContent"></pre>
     <div style="display: none;position: fixed;width: 100%;height: 100%;left: 0; top: 0;-webkit-app-region: no-drag;" id="cover"></div>
-    <div id="percent" style="-webkit-app-region: no-drag;"><input type="number" oninput="percentChange()" />%</div>
+    <div id="percent" style="-webkit-app-region: no-drag;"><input type="number" step="0.01" oninput="percentChange()" />%</div>
     <div id="tips" style="display: none;"></div>
     <script>
         let windowLeft = window.screenLeft;
